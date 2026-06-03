@@ -1036,6 +1036,16 @@
           `;
         }
         container.innerHTML = html;
+
+        // Auto-expand the first (most recent) log entry if none is manually expanded
+        if (!expandedLogId && logs.length > 0) {
+          const firstLogId = `log-body-${logs[0].id || ''}`;
+          const firstEl = container.querySelector('[id^="log-body-"]');
+          if (firstEl) {
+            firstEl.classList.remove('hidden');
+            expandedLogId = firstEl.id;
+          }
+        }
       } catch (err) {
         // Silent — console logs may not be available yet
       }
