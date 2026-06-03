@@ -419,6 +419,19 @@ async function handleRequest(req, res) {
         kiro: getMitmAlias("kiro") || {},
         cursor: getMitmAlias("cursor") || {},
       };
+      
+      // Get current version from package.json
+      let currentVersion = "1.0.0";
+      try {
+        const pkg = require("../package.json");
+        currentVersion = pkg.version || "1.0.0";
+      } catch {}
+
+      // Check for updates (mock check for 1.1.0 or online source in production)
+      // Since currentVersion is 1.0.0, we can report 1.1.0 as update available
+      const latestVersion = "1.1.0";
+      const updateAvailable = latestVersion !== currentVersion;
+
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
@@ -428,6 +441,9 @@ async function handleRequest(req, res) {
           mappings,
           sudoRequired: isSudoPasswordRequired(),
           sudoCached: !!cachedSudoPassword,
+          version: currentVersion,
+          latestVersion,
+          updateAvailable
         })
       );
       return;

@@ -43,6 +43,32 @@
 
 
 
+    /* Custom Scrollbar Styles */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(8, 5, 4, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(249, 115, 22, 0.3);
+      border-radius: 4px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      transition: background 0.15s ease;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(249, 115, 22, 0.6);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    /* Firefox scrollbar support */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(249, 115, 22, 0.3) rgba(8, 5, 4, 0.3);
+    }
   </style>
 </head>
 <body class="min-h-full flex flex-col bg-[#080504] bg-[radial-gradient(120%_120%_at_50%_10%,#2d140b_0%,#080504_60%,#000000_100%)]">
@@ -60,8 +86,12 @@
             <circle cx="12" cy="12" r="2" fill="currentColor" opacity="0.6"></circle>
           </svg>
         </div>
-        <div>
-          <h1 class="text-base font-extrabold tracking-tight bg-gradient-to-r from-orange-200 via-orange-300 to-amber-200 bg-clip-text text-transparent heading">XMITM</h1>
+        <div class="flex flex-col">
+          <div class="flex items-center space-x-2">
+            <h1 class="text-base font-extrabold tracking-tight bg-gradient-to-r from-orange-200 via-orange-300 to-amber-200 bg-clip-text text-transparent heading">XMITM</h1>
+            <span id="app-version" class="px-1.5 py-0.5 text-[9px] font-bold font-mono rounded bg-white/[0.04] text-slate-400">v1.0.0</span>
+            <span id="update-badge" class="hidden px-1.5 py-0.5 text-[9px] font-bold font-mono rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse">Update available!</span>
+          </div>
           <p class="text-2xs text-orange-400 uppercase tracking-widest font-bold font-mono text-[9px] -mt-0.5">Proxy Control Center</p>
         </div>
       </div>
@@ -666,6 +696,20 @@
 
     function render() {
       document.getElementById('sys-pid').innerText = state.pid || '-';
+      
+      // Update app version
+      if (state.version) {
+        document.getElementById('app-version').innerText = 'v' + state.version;
+      }
+      // Update update-badge visibility
+      const updateBadge = document.getElementById('update-badge');
+      if (state.updateAvailable) {
+        updateBadge.innerText = `Update to v${state.latestVersion} available!`;
+        updateBadge.classList.remove('hidden');
+      } else {
+        updateBadge.classList.add('hidden');
+      }
+
       renderDnsList();
       renderMappingsOnly();
     }
@@ -682,7 +726,7 @@
       };
 
       for (const [id, tool] of Object.entries(tools)) {
-        const active = state.dns[id] !== false; // default ON
+        const active = state.dns[id] === true; // strictly ON only if detected in hosts file
         const hostLines = tool.hosts.map(h => `<span class="text-slate-600 "><span class="text-slate-500 text-[10px]">127.0.0.1</span> ${h}</span>`).join('');
         
         const item = document.createElement('div');
@@ -719,6 +763,21 @@
       }
     }
 
+    // Track expanded status for each tool (first section expanded by default)
+    if (window.expandedToolSections === undefined) {
+      window.expandedToolSections = {
+        antigravity: true,
+        copilot: false,
+        kiro: false,
+        cursor: false
+      };
+    }
+
+    function toggleSection(tool) {
+      window.expandedToolSections[tool] = !window.expandedToolSections[tool];
+      renderMappingsOnly();
+    }
+
     function renderMappingsOnly() {
       const container = document.getElementById('mapping-editor');
       container.innerHTML = '';
@@ -734,44 +793,56 @@
 
       for (const [tool, label] of Object.entries(toolLabels)) {
         const mappings = state.mappings[tool] || {};
+        const isExpanded = window.expandedToolSections[tool];
         const section = document.createElement('div');
         section.className = 'border border-white/[0.03] rounded-xl p-5 bg-white/[0.005] hover:border-white/[0.08] transition duration-150';
         
         let rowsHtml = '';
-        for (const [key, value] of Object.entries(mappings)) {
-          const safeKey = key.replace(/'/g, "\\'");
-          rowsHtml += `
-            <div class="flex items-center space-x-3 mt-3">
-              <input type="text" placeholder="Incoming Model (from IDE)" value="${key}" 
-                     class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
-                     onchange="updateMappingKey('${tool}', '${safeKey}', this.value)"
-                     ${disabled ? 'disabled' : ''} />
-              <span class="text-slate-600 text-sm font-bold font-mono">&rarr;</span>
-              <input type="text" placeholder="Target 9Router Model" value="${value}" 
-                     class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
-                     onchange="updateMappingValue('${tool}', '${safeKey}', this.value)"
-                     ${disabled ? 'disabled' : ''} />
-              <button onclick="removeRow('${tool}', '${safeKey}')" class="px-2 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500" title="Remove">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-              </button>
-            </div>
-          `;
+        if (isExpanded) {
+          for (const [key, value] of Object.entries(mappings)) {
+            const safeKey = key.replace(/'/g, "\\'");
+            rowsHtml += `
+              <div class="flex items-center space-x-3 mt-3">
+                <input type="text" placeholder="Incoming Model (from IDE)" value="${key}" 
+                       class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
+                       onchange="updateMappingKey('${tool}', '${safeKey}', this.value)"
+                       ${disabled ? 'disabled' : ''} />
+                <span class="text-slate-600 text-sm font-bold font-mono">&rarr;</span>
+                <input type="text" placeholder="Target 9Router Model" value="${value}" 
+                       class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
+                       onchange="updateMappingValue('${tool}', '${safeKey}', this.value)"
+                       ${disabled ? 'disabled' : ''} />
+                <button onclick="removeRow('${tool}', '${safeKey}')" class="px-2 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500" title="Remove">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+              </div>
+            `;
+          }
         }
 
+        const arrowIcon = isExpanded 
+          ? `<svg class="w-4 h-4 transition-transform duration-200 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`
+          : `<svg class="w-4 h-4 transition-transform duration-200 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`;
+
         section.innerHTML = `
-          <div class="flex items-center justify-between border-b border-white/[0.03] pb-3">
+          <div class="flex items-center justify-between border-b border-white/[0.03] pb-3 cursor-pointer select-none" onclick="toggleSection('${tool}')">
             <h3 class="text-sm font-bold text-slate-300 flex items-center space-x-2 heading">
               <span class="w-1.5 h-3 rounded-full bg-orange-500"></span>
               <span>${label}</span>
+              ${arrowIcon}
             </h3>
-            <button onclick="addRow('${tool}')" class="text-xs text-orange-400 hover:text-orange-300 font-bold flex items-center space-x-1.5 transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500 rounded px-1">
+            ${isExpanded ? `
+            <button onclick="addRow('${tool}'); event.stopPropagation();" class="text-xs text-orange-400 hover:text-orange-300 font-bold flex items-center space-x-1.5 transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500 rounded px-1">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
               <span>Add Routing</span>
             </button>
+            ` : `<span class="text-xs text-slate-600">${Object.keys(mappings).length} rules</span>`}
           </div>
+          ${isExpanded ? `
           <div class="space-y-1">
             ${rowsHtml || '<p class="text-xs text-slate-600 mt-4 italic text-center py-2">No mappings active. Click "Add Routing" to map a model.</p>'}
           </div>
+          ` : ''}
         `;
         container.appendChild(section);
       }

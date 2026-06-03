@@ -83,8 +83,9 @@ function sanitizeGeminiTools(body) {
  * Intercept Antigravity request — forward Gemini body as-is to /v1/chat/completions.
  * Router auto-detects format via body.userAgent==="antigravity" + body.request.contents,
  * runs antigravity→openai→provider→openai→antigravity translators internally.
+ * Falls back to passthrough if router is unavailable.
  */
-async function intercept(req, res, bodyBuffer, mappedModel) {
+async function intercept(req, res, bodyBuffer, mappedModel, passthrough) {
   const dumper = IS_DEV ? createResponseDumper(req, "intercept-antigravity") : null;
   const isStream = req.url.includes(":streamGenerateContent");
   try {
@@ -95,16 +96,10 @@ async function intercept(req, res, bodyBuffer, mappedModel) {
     const routerRes = await fetchRouter(body, "/v1/chat/completions", req.headers);
     await pipeSSE(routerRes, res, dumper);
   } catch (error) {
-    err(`[antigravity] ${error.message}`);
-    if (dumper) { dumper.writeChunk(`\n[ERROR] ${error.message}\n`); dumper.end(); }
-    // For stream endpoint, send SSE error chunk so SDK doesn't hang waiting
-    if (isStream) {
-      if (!res.headersSent) res.writeHead(200, { "Content-Type": "text/event-stream" });
-      res.end(`data: ${JSON.stringify({ error: { message: error.message } })}\r\n\r\n`);
-    } else {
-      if (!res.headersSent) res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: { message: error.message, type: "mitm_error" } }));
-    }
+    err(`[antigravity] Router failed, falling back to passthrough: ${error.message}`);
+    if (dumper) { dumper.writeChunk(`\n[FALLBACK] Router failed: ${error.message}\n`); dumper.end(); }
+    // Fallback to passthrough so IDE can still submit even if router is down
+    return passthrough(req, res, bodyBuffer);
   }
 }
 
