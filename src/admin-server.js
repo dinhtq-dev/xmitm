@@ -420,16 +420,53 @@ async function handleRequest(req, res) {
         cursor: getMitmAlias("cursor") || {},
       };
       
-      // Get current version from package.json
+      // Get current version from local package.json
       let currentVersion = "1.0.0";
       try {
         const pkg = require("../package.json");
         currentVersion = pkg.version || "1.0.0";
       } catch {}
 
-      // Check for updates (mock check for 1.1.0 or online source in production)
-      // Since currentVersion is 1.0.0, we can report 1.1.0 as update available
-      const latestVersion = "1.1.0";
+      // Fetch the latest version from the master/main package.json on GitHub
+      const fetchLatestVersion = () => {
+        return new Promise((resolve) => {
+          const options = {
+            hostname: 'raw.githubusercontent.com',
+            port: 443,
+            path: '/dinhtq-dev/xmitm/main/package.json',
+            method: 'GET',
+            headers: {
+              'User-Agent': 'xmitm-update-checker'
+            },
+            timeout: 2500 // Bounded timeout so UI doesn't hang
+          };
+
+          const request = https.get(options, (response) => {
+            if (response.statusCode !== 200) {
+              resolve(currentVersion);
+              return;
+            }
+            let data = "";
+            response.on("data", chunk => data += chunk);
+            response.on("end", () => {
+              try {
+                const parsed = JSON.parse(data);
+                resolve(parsed.version || currentVersion);
+              } catch {
+                resolve(currentVersion);
+              }
+            });
+          });
+
+          request.on("error", () => resolve(currentVersion));
+          request.on("timeout", () => {
+            request.destroy();
+            resolve(currentVersion);
+          });
+        });
+      };
+
+      const latestVersion = await fetchLatestVersion();
       const updateAvailable = latestVersion !== currentVersion;
 
       res.writeHead(200, { "Content-Type": "application/json" });
