@@ -420,11 +420,11 @@ async function handleRequest(req, res) {
         cursor: getMitmAlias("cursor") || {},
       };
       
-      // Get current version from local package.json
+      // Get current version from local package.json (read fresh, no cache)
       let currentVersion = "1.0.0";
       try {
-        const pkg = require("../package.json");
-        currentVersion = pkg.version || "1.0.0";
+        const pkgRaw = fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf-8");
+        currentVersion = JSON.parse(pkgRaw).version || "1.0.0";
       } catch {}
 
       // Fetch the latest version from the master/main package.json on GitHub
