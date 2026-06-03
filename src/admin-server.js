@@ -71,6 +71,7 @@ function collectBodyRaw(req) {
  * Uses fuser on Linux, lsof on macOS.
  */
 function killPortCmd(port) {
+  if (IS_WIN) return `powershell -NonInteractive -WindowStyle Hidden -Command "Get-NetTCPConnection -LocalPort ${port} -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"`;
   if (IS_LINUX) return `fuser -k ${port}/tcp 2>/dev/null`;
   if (IS_MAC) return `sh -c 'lsof -ti:${port} | xargs kill -9 2>/dev/null || true'`;
   return `fuser -k ${port}/tcp 2>/dev/null || true`;
@@ -338,8 +339,13 @@ async function stopMitmServer(sudoPassword) {
     mitmPid = null;
   }
 
-  // ── Step 3: Force-kill anything still listening on port 443 (via sudo) ──
-  if (password) {
+  // ── Step 3: Force-kill anything still listening on port 443 ──
+  if (IS_WIN) {
+    try {
+      log("🔪 Force-killing any remaining process on port 443 (Windows)...");
+      execSync(killPortCmd(443), { stdio: "ignore", timeout: 5000, windowsHide: true });
+    } catch {}
+  } else if (password) {
     try {
       log("🔪 Force-killing any remaining process on port 443...");
       const cmd = `echo ${shellQuote(password)} | sudo -S ${killPortCmd(443)}`;
@@ -351,12 +357,14 @@ async function stopMitmServer(sudoPassword) {
     } catch {}
   }
 
-  // ── Step 4: Wait and verify MITM is actually dead ──
-  for (let i = 0; i < 12; i++) {
+  // ── Step 4: Wait and verify MITM is actually dead (max 3 attempts) ──
+  for (let i = 0; i < 3; i++) {
     try {
-      await pollMitmHealth(1500);
-      // Still alive — try once more
-      if (password) {
+      await pollMitmHealth(1000);
+      // Still alive — try force-kill once more
+      if (IS_WIN) {
+        try { execSync(killPortCmd(443), { stdio: "ignore", timeout: 3000, windowsHide: true }); } catch {}
+      } else if (password) {
         try {
           execSync(
             `echo ${shellQuote(password)} | sudo -S ${killPortCmd(443)}`,
