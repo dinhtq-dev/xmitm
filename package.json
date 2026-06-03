@@ -1,6 +1,6 @@
 {
   "name": "xmitm",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "XMITM — Express MITM proxy for AI coding tool traffic interception",
   "main": "index.js",
   "scripts": {
