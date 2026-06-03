@@ -875,6 +875,7 @@
     // ── Console Logs ───────────────────────────────────────────
     let consolePollTimer = null;
     let expandedLogId = null;
+    let firstLogEntryId = null;
 
     function escapeHtml(str) {
       if (!str) return '';
@@ -888,6 +889,9 @@
 
     /** @param {string} id */
     function toggleLogDetail(id) {
+      // Don't allow closing the first (most recent) log entry
+      if (id === firstLogEntryId && expandedLogId === id) return;
+
       // Click same one → close
       if (expandedLogId === id) {
         const el = document.getElementById(id);
@@ -896,8 +900,8 @@
         resumeConsolePoll();
         return;
       }
-      // Close previous
-      if (expandedLogId) {
+      // Close previous (but never close the first entry)
+      if (expandedLogId && expandedLogId !== firstLogEntryId) {
         const prev = document.getElementById(expandedLogId);
         if (prev) prev.classList.add('hidden');
       }
@@ -975,7 +979,10 @@
         }
 
         let html = '';
-        for (const log of logs) {
+        let firstId = null;
+        for (let idx = 0; idx < logs.length; idx++) {
+          const log = logs[idx];
+          const isFirst = idx === 0;
           const ts = new Date(log.timestamp).toLocaleTimeString('en-US', { hour12: false });
           const actionColor = log.action === 'intercepted' ? 'text-emerald-400' : 'text-slate-500';
           const actionIcon = log.action === 'intercepted' ? '⚡' : '➡';
@@ -1012,7 +1019,7 @@
                 </div>
               </div>
               <!-- Expandable detail section -->
-              <div id="${logId}" class="hidden border-t border-white/[0.03]">
+              <div id="${logId}" class="${isFirst ? '' : 'hidden'} border-t border-white/[0.03]">
                 <div class="grid grid-cols-2 gap-0 divide-x divide-white/[0.03]">
                   <div class="p-3">
                     <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 flex items-center justify-between">
@@ -1034,18 +1041,12 @@
               </div>
             </div>
           `;
+          if (isFirst) firstId = logId;
         }
         container.innerHTML = html;
 
-        // Auto-expand the first (most recent) log entry if none is manually expanded
-        if (!expandedLogId && logs.length > 0) {
-          const firstLogId = `log-body-${logs[0].id || ''}`;
-          const firstEl = container.querySelector('[id^="log-body-"]');
-          if (firstEl) {
-            firstEl.classList.remove('hidden');
-            expandedLogId = firstEl.id;
-          }
-        }
+        // Track the first (most recent) log entry ID so it stays always open
+        firstLogEntryId = firstId;
       } catch (err) {
         // Silent — console logs may not be available yet
       }
