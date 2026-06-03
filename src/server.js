@@ -249,7 +249,9 @@ async function handleRequest(req, res) {
       let bodyText = '';
       try {
         const fullBuf = Buffer.concat(responseBodyBuffers);
-        if (responseContentEncoding && responseContentEncoding.includes('gzip')) {
+        if (responseContentEncoding && responseContentEncoding.includes('br')) {
+          bodyText = zlib.brotliDecompressSync(fullBuf).toString('utf8');
+        } else if (responseContentEncoding && responseContentEncoding.includes('gzip')) {
           bodyText = zlib.gunzipSync(fullBuf).toString('utf8');
         } else if (responseContentEncoding && responseContentEncoding.includes('deflate')) {
           bodyText = zlib.inflateSync(fullBuf).toString('utf8');
@@ -260,10 +262,16 @@ async function handleRequest(req, res) {
           bodyText = fullBuf.toString('utf8');
         }
       } catch (e) {
-        // Decompression failed — show as base64 (not binary garbage)
+        // Decompression failed — try all methods as fallback
         try {
           const raw = Buffer.concat(responseBodyBuffers);
-          bodyText = raw.toString('utf8');
+          // Try brotli fallback
+          try { bodyText = zlib.brotliDecompressSync(raw).toString('utf8'); } catch {
+            // Try gzip fallback
+            try { bodyText = zlib.gunzipSync(raw).toString('utf8'); } catch {
+              bodyText = raw.toString('utf8');
+            }
+          }
           // If utf8 output has too many replacement characters, show as base64
           if (/\uFFFD/.test(bodyText) && bodyText.length > 10) {
             bodyText = '[base64] ' + raw.toString('base64').substring(0, MAX_BODY_CAPTURE - 10);
