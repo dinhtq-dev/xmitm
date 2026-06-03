@@ -957,6 +957,7 @@
 
       // Load console logs when switching to console tab
       if (tab === 'console') resumeConsolePoll();
+      if (tab === 'providers' && !providerQuotaTimer) startProviderQuotaPoll();
     }
 
     // ── Console Logs ───────────────────────────────────────────
@@ -1228,6 +1229,68 @@
 
     // Server-synced state
     let serverProviders = { activeProvider: null, providers: {} };
+    let providerQuota = {};
+    let providerQuotaLoading = false;
+    let providerQuotaUpdatedAt = null;
+    let providerQuotaTimer = null;
+
+    function startProviderQuotaPoll() {
+      stopProviderQuotaPoll();
+      loadProviderQuotas(true);
+      providerQuotaTimer = setInterval(() => loadProviderQuotas(true), 60000);
+    }
+    function stopProviderQuotaPoll() {
+      if (providerQuotaTimer) { clearInterval(providerQuotaTimer); providerQuotaTimer = null; }
+    }
+    function quotaPercent(q) {
+      if (!q || !q.ok) return 0;
+      if (q.percent != null && !isNaN(q.percent)) return Math.min(100, Math.max(0, Number(q.percent)));
+      if (q.remaining != null && q.limit != null && Number(q.limit) > 0) {
+        return Math.min(100, Math.round((Number(q.remaining) / Number(q.limit)) * 100));
+      }
+      return 100;
+    }
+    function quotaBarColor(q, pct) {
+      if (!q || !q.ok || q.status === 'invalid_key') return 'bg-rose-500';
+      if (pct >= 50) return 'bg-emerald-500';
+      if (pct >= 20) return 'bg-amber-500';
+      return 'bg-rose-500';
+    }
+    function formatKeyQuota(pid, idx) {
+      const pq = providerQuota[pid];
+      const q = pq && pq.keys && pq.keys[idx] ? pq.keys[idx] : null;
+      if (!q && providerQuotaLoading) {
+        return '<div class="mt-2 space-y-1"><div class="h-2 w-full rounded-full bg-slate-800 overflow-hidden"><div class="h-full w-1/3 rounded-full bg-slate-600 animate-pulse"></div></div><span class="text-[9px] font-mono text-slate-500">Dang kiem tra...</span></div>';
+      }
+      if (!q) {
+        return '<div class="mt-2 space-y-1"><div class="h-2 w-full rounded-full bg-slate-800 overflow-hidden"><div class="h-full w-1/3 rounded-full bg-slate-500 animate-pulse"></div></div><span class="text-[9px] font-mono text-slate-500">Dang kiem tra...</span></div>';
+      }
+      const pct = quotaPercent(q);
+      const bar = quotaBarColor(q, pct);
+      const label = q.label || (q.ok ? 'Key OK' : '—');
+      const src = q.source === '9router' ? ' · 9router' : '';
+      const pctText = q.ok ? (pct + '%') : '';
+      return '<div class="mt-2 space-y-1">'
+        + '<div class="h-2 w-full rounded-full bg-slate-800/80 overflow-hidden">'
+        + '<div class="h-full rounded-full transition-all duration-300 ' + bar + '" style="width:' + pct + '%"></div>'
+        + '</div>'
+        + '<div class="flex items-center justify-between gap-2">'
+        + '<span class="text-[9px] font-mono ' + (q.ok ? 'text-emerald-400' : 'text-slate-500') + '">' + label + src + '</span>'
+        + (pctText ? '<span class="text-[9px] font-bold font-mono text-emerald-300">' + pctText + '</span>' : '')
+        + '</div></div>';
+    }
+    async function loadProviderQuotas(refresh) {
+      const onProvidersTab = currentTab === 'providers';
+      if (onProvidersTab) { providerQuotaLoading = true; renderProviders(); }
+      try {
+        const res = await fetch('/api/admin/providers/quota' + (refresh ? '?refresh=1' : ''));
+        const data = await res.json();
+        if (data.quota) providerQuota = data.quota;
+        providerQuotaUpdatedAt = new Date();
+      } catch (e) { /* silent */ }
+      providerQuotaLoading = false;
+      if (onProvidersTab) renderProviders();
+    }
 
     // ── Load from server ──
     async function loadProviders() {
@@ -1238,7 +1301,7 @@
       renderProviders();
     }
 
-    // ── Save to server (providers.json) ──
+    // -- Save to server (providers.json) ──
     async function syncToServer() {
       try {
         const res = await fetch('/api/admin/providers', {
@@ -1367,11 +1430,21 @@
                 <span>Rotate</span>
               </button>` : ''}
             </div>
-            ${keys.map((k, i) => `
-              <div class="flex items-center justify-between bg-black/30 rounded-lg px-3 py-1.5">
-                <span class="text-[11px] font-mono text-slate-400 truncate flex-1 mr-2 ${i === 0 ? 'text-indigo-300' : ''}">${i === 0 ? '▶ ' : ''}${k.length > 18 ? k.slice(0, 12) + '…' + k.slice(-6) : k}</span>
-                <button onclick="removeProviderKey('${p.id}', ${i})" class="text-rose-500 hover:text-rose-400 text-xs shrink-0 cursor-pointer">✖</button>
-              </div>`).join('')}
+            ${keys.map((k, i) => {
+              const q = providerQuota[p.id]?.keys?.[i];
+              const keyOk = q && q.ok;
+              const rowBg = keyOk
+                ? 'bg-emerald-500/25 border-2 border-emerald-400/50 shadow-sm shadow-emerald-500/10'
+                : (q && !q.ok ? 'bg-rose-500/15 border border-rose-500/40' : 'bg-emerald-500/18 border-2 border-emerald-500/35');
+              return `
+              <div class="rounded-lg px-3 py-2.5 ${rowBg}">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  <span class="text-[11px] font-mono font-semibold text-emerald-200 truncate flex-1">${i === 0 ? '▶ ' : ''}${k.length > 18 ? k.slice(0, 12) + '…' + k.slice(-6) : k}</span>
+                  <button type="button" onclick="event.stopPropagation(); removeProviderKey('${p.id}', ${i})" class="text-rose-400 hover:text-rose-300 text-xs shrink-0 cursor-pointer px-1">✖</button>
+                </div>
+                ${formatKeyQuota(p.id, i)}
+              </div>`;
+            }).join('')}
           </div>` : `
           <div class="border-t border-white/[0.03] pt-3">
             <span class="text-[11px] text-slate-600 italic">No keys added yet</span>
@@ -1469,6 +1542,7 @@
     // Init
     startPolling();
     loadProviders();
+    startProviderQuotaPoll();
   </script>
 </body>
 </html>

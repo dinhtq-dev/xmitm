@@ -34,6 +34,7 @@ const { getMitmAlias } = require("./dbReader");
 const { getAllCredentials } = require("./credentials");
 const { init: initLogStore, getLogs, clearLogs } = require("./logStore");
 const { loadProviders, saveProviders, forwardRequest } = require("./providerRouter");
+const { checkAllProviders, clearQuotaCache } = require("./providerQuota");
 
 // Initialize log store at startup
 initLogStore();
@@ -665,6 +666,16 @@ async function handleRequest(req, res) {
       const data = loadProviders();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(data));
+      return;
+    }
+
+    if (pathname === "/api/admin/providers/quota" && req.method === "GET") {
+      const data = loadProviders();
+      const refresh = url.searchParams.get("refresh") === "1";
+      if (refresh) clearQuotaCache();
+      const quota = await checkAllProviders(data);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true, quota, cached: !refresh }));
       return;
     }
 
