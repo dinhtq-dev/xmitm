@@ -1,0 +1,27 @@
+{
+  "antigravity": {
+    "gemini-default": "ai_combos",
+    "gemini-pro-agent": "ai_combos",
+    "gemini-3.5-flash": "ai_combos",
+    "gemini-3.5-flash-high": "ai_combos",
+    "gemini-3.5-flash-low": "ai_combos",
+    "gemini-3.1-pro-low": "ai_combos",
+    "gemini-3.1-pro-high": "ai_combos",
+    "claude-sonnet-4-6": "ai_combos",
+    "claude-opus-4-6-thinking": "ai_combos",
+    "gpt-oss-120b-medium": "ai_combos",
+    "gemini-3-flash": "ai_combos"
+  },
+  "copilot": {
+    "gpt-4o": "ai_combos",
+    "claude-3.5-sonnet": "ai_combos"
+  },
+  "kiro": {
+    "nova-pro": "ai_combos",
+    "default": "ai_combos"
+  },
+  "cursor": {
+    "gpt-4o": "ai_combos",
+    "claude-3-opus": "ai_combos"
+  }
+}

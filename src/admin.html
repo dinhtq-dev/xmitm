@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#03050c] text-slate-100 antialiased selection:bg-orange-500/30">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MITM Standalone Control Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Fira Sans', sans-serif; }
+    .heading { font-family: 'Fira Sans', sans-serif; font-weight: 700; }
+    .mono { font-family: 'Fira Code', monospace; }
+    
+    
+    .glass-card {
+      background: rgba(20, 12, 10, 0.45); /* #140C0A */
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    
+    .glass-card-hover:hover {
+      background: rgba(30, 18, 15, 0.6); /* #1E120F */
+      border-color: rgba(249, 115, 22, 0.3);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 30px -5px rgba(249, 115, 22, 0.15);
+    }
+
+    .glow-blue {
+      box-shadow: 0 0 40px -5px rgba(37, 99, 235, 0.25);
+    }
+    
+    .glow-orange {
+      box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.25);
+    }
+      @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+
+
+  </style>
+</head>
+<body class="min-h-full flex flex-col bg-[#080504] bg-[radial-gradient(120%_120%_at_50%_10%,#2d140b_0%,#080504_60%,#000000_100%)]">
+
+
+  <!-- Header -->
+  <header class="border-b border-white/[0.03] bg-[#080504]/60 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white shadow-lg glow-orange">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+            <circle cx="12" cy="12" r="9" stroke-width="1.5" fill="none"></circle>
+            <circle cx="12" cy="12" r="2" fill="currentColor" opacity="0.6"></circle>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base font-extrabold tracking-tight bg-gradient-to-r from-orange-200 via-orange-300 to-amber-200 bg-clip-text text-transparent heading">XMITM</h1>
+          <p class="text-2xs text-orange-400 uppercase tracking-widest font-bold font-mono text-[9px] -mt-0.5">Proxy Control Center</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button id="btn-toggle-mitm" onclick="toggleMitm()" class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold transition duration-150 cursor-pointer focus:outline-none focus:ring-2">
+          <svg id="btn-toggle-icon" class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-6.69-4.09A1 1 0 006 7.93v8.14a1 1 0 001.062.992l6.69-4.09a1 1 0 000-1.704z"></path></svg>
+          <span id="btn-toggle-text">Start MITM</span>
+        </button>
+        <span id="status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20 cursor-default">
+          <span id="status-dot" class="w-2 h-2 mr-2 rounded-full bg-rose-500"></span>
+          <span id="status-text">Stopped</span>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sudo Password Modal -->
+  <div id="sudo-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-200 opacity-0 pointer-events-none" onclick="if(event.target===this) cancelSudoPassword()">
+    <div class="glass-card rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 border border-white/[0.06] transform scale-95 transition-transform duration-200">
+      <div class="flex items-center space-x-3 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white shadow-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-200">Administrator Access Required</h3>
+          <p class="text-xs text-slate-500 mt-0.5">sudo password needed to modify DNS entries</p>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-1.5">Password</label>
+          <input id="sudo-password-input" type="password" 
+                 class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150"
+                 placeholder="Enter your sudo password..."
+                 onkeydown="if(event.key==='Enter') submitSudoPassword()" />
+        </div>
+        <div class="text-xs text-slate-500 leading-relaxed">
+          ⚠️ Password is used only for this session and is never stored.
+        </div>
+        <div class="flex items-center space-x-3">
+          <button id="btn-sudo-cancel" onclick="cancelSudoPassword()"
+                  class="flex-1 px-4 py-2.5 bg-white/[0.03] hover:bg-white/[0.06] text-slate-400 hover:text-slate-200 font-bold text-xs rounded-xl transition duration-150 cursor-pointer focus:outline-none">
+            Cancel
+          </button>
+          <button id="btn-sudo-submit" onclick="submitSudoPassword()"
+                  class="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 text-white font-bold text-xs rounded-xl transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-400">
+            Submit
+          </button>
+        </div>
+        <div id="sudo-error" class="text-xs text-red-400 hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+  <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <!-- LEFT: System Health & Redirect Toggles -->
+    <div class="lg:col-span-1 space-y-6">
+      
+      <!-- System status info card -->
+      <div class="glass-card rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+        <div class="absolute -right-4 -top-4 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl"></div>
+        <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-5 flex items-center space-x-2 heading">
+          <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+          <span>System Details</span>
+        </h2>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center py-2.5 border-b border-white/[0.03]">
+            <span class="text-sm text-slate-400">PID</span>
+            <span class="text-sm font-semibold mono text-orange-300" id="sys-pid">-</span>
+          </div>
+          <div class="flex justify-between items-center py-2.5 border-b border-white/[0.03]">
+            <span class="text-sm text-slate-400">HTTPS Proxy Port</span>
+            <span class="text-sm font-semibold text-slate-200">443 <span class="text-2xs text-slate-500 font-normal ml-1">(SSL)</span></span>
+          </div>
+          <div class="flex justify-between items-center py-2.5 border-b border-white/[0.03]">
+            <span class="text-sm text-slate-400">HTTP Shim Port</span>
+            <span class="text-sm font-semibold text-slate-200">20129</span>
+          </div>
+        </div>
+
+        <!-- Router Config -->
+        <div class="mt-5 pt-4 border-t border-white/[0.03]">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 heading flex items-center space-x-2">
+            <svg class="w-3.5 h-3.5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <span>API Endpoint</span>
+          </h3>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-2xs text-slate-500 mb-1.5 font-mono">MITM_ROUTER_BASE</label>
+              <input id="config-router-base" type="text" placeholder="https://ai.proxy.vn/v1"
+                     class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none" />
+            </div>
+            <div>
+              <label class="block text-2xs text-slate-500 mb-1.5 font-mono">ROUTER_API_KEY</label>
+              <div class="relative">
+                <input id="config-api-key" type="password" placeholder="sk-..."
+                       class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 pr-9 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none" />
+                <button onclick="toggleApiKeyVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition duration-150 cursor-pointer focus:outline-none" type="button">
+                  <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                </button>
+              </div>
+            </div>
+            <button id="btn-save-config" onclick="saveConfig()" class="w-full mt-1 px-4 py-2.5 bg-gradient-to-r from-orange-500/80 to-amber-600/80 hover:from-orange-500 hover:to-amber-600 active:scale-[0.98] text-white font-bold text-xs rounded-xl transition duration-200 disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-400">
+              Save Configuration
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DNS Switches Card -->
+      <div class="glass-card rounded-2xl p-6 shadow-2xl">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 flex items-center space-x-2 heading">
+          <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          <span>DNS Redirection</span>
+        </h2>
+        <p class="text-xs text-slate-500 mb-6 leading-relaxed">Turn switch ON to force traffic into MITM, or OFF to let requests go through normal internet.</p>
+        
+        <div class="space-y-4" id="dns-list">
+          <!-- Dyn lists -->
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Tabs: Model Routing | Console -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Tab Buttons -->
+      <div class="flex items-center space-x-1 border-b border-white/[0.03] mb-0">
+        <button id="tab-console" onclick="switchTab('console')" class="tab-btn active px-5 py-3 text-xs font-bold text-slate-200 border-b-2 transition duration-150 cursor-pointer focus:outline-none" style="border-bottom-color: #f97316;">
+          <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          Console
+        </button>
+        <button id="tab-routing" onclick="switchTab('routing')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
+          <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+          Model Routing Rules
+        </button>
+      </div>
+
+      <!-- Tab Content: Console -->
+      <div id="panel-console" class="tab-panel">
+        <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden" style="min-height: 400px;">
+          <div class="absolute -right-12 -top-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
+          <div class="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.03]">
+            <div>
+              <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span>Request / Response Log</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-1">Last 20 intercepted requests — auto-refreshes every 5s.</p>
+            </div>
+          </div>
+          <div id="console-log" class="space-y-2 flex-1 overflow-y-auto max-h-[500px] font-mono text-xs">
+            <div class="text-center text-slate-600 py-12 italic">No requests logged yet. Start MITM and send some API calls.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Model Routing -->
+      <div id="panel-routing" class="tab-panel hidden">
+        <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
+          <div class="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl"></div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-white/[0.03]">
+            <div>
+              <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
+                <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                <span>Model Routing Rules</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-1">Intercepted requests will have their model renamed to the destination model.</p>
+            </div>
+            <button id="btn-save-mappings" onclick="saveAllMappings()" class="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-lg glow-orange transition duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-[#080504]">
+              Save Mappings
+            </button>
+          </div>
+          <div id="mapping-editor" class="space-y-6 flex-1">
+            <!-- Dyn map layout -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  </div>
+
+  <footer class="border-t border-white/[0.01] py-6 text-center text-xs text-slate-700">
+    Crafted by dinhtq — MITM Promax v1.0 &bull; Secure API interception &amp; model routing
+  </footer>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 px-5 py-3.5 rounded-xl shadow-2xl text-xs font-bold transition duration-300 transform translate-y-20 opacity-0 z-50 flex items-center space-x-2.5">
+    <span>Message</span>
+  </div>
+
+  <script>
+    const DNS_STATE_KEY = 'mitm_dns_state';
+
+    let state = {
+      pid: null,
+      mitmRunning: false,
+      dns: {},
+      mappings: {},
+      sudoRequired: false,
+      sudoCached: false
+    };
+
+    function showToast(text, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.innerHTML = `<span>${text}</span>`;
+      toast.className = `fixed bottom-6 right-6 px-5 py-3.5 rounded-xl shadow-2xl text-xs font-bold transition duration-300 z-50 flex items-center space-x-2.5 ${
+        type === 'success' ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white glow-orange' : 'bg-gradient-to-r from-orange-500 to-red-500 text-white glow-orange'
+      }`;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+
+    // ── Toggle button ───────────────────────────────────────────
+    function updateToggleButton(running, loading) {
+      const btn = document.getElementById('btn-toggle-mitm');
+      const icon = document.getElementById('btn-toggle-icon');
+      const text = document.getElementById('btn-toggle-text');
+      
+      if (loading) {
+        btn.disabled = true;
+        icon.className = 'animate-spin h-4 w-4';
+        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>`;
+        text.innerText = running ? 'Stopping...' : 'Starting...';
+        return;
+      }
+      
+      btn.disabled = false;
+      if (running) {
+        btn.className = 'inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/20 hover:border-rose-500/40 transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500';
+        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6h12v12H6z"></path>`;
+        text.innerText = 'Stop MITM';
+      } else {
+        btn.className = 'inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/40 transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500';
+        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-6.69-4.09A1 1 0 006 7.93v8.14a1 1 0 001.062.992l6.69-4.09a1 1 0 000-1.704z"></path>`;
+        text.innerText = 'Start MITM';
+      }
+    }
+
+    function updateStatusBadge(running) {
+      const dot = document.getElementById('status-dot');
+      const text = document.getElementById('status-text');
+      const badge = document.getElementById('status-badge');
+      if (running) {
+        dot.className = 'w-2 h-2 mr-2 rounded-full bg-emerald-500 animate-pulse';
+        text.innerText = 'Running';
+        badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 cursor-default';
+      } else {
+        dot.className = 'w-2 h-2 mr-2 rounded-full bg-rose-500';
+        text.innerText = 'Stopped';
+        badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20 cursor-default';
+      }
+      updateToggleButton(running, false);
+    }
+
+    // ── DNS State Persistence ──────────────────────────────────
+    function loadDnsState() {
+      try {
+        const saved = localStorage.getItem(DNS_STATE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch { /* ignore */ }
+      // Default: only antigravity enabled
+      return { antigravity: true, copilot: false, kiro: false, cursor: false };
+    }
+
+    function saveDnsState(dns) {
+      try {
+        localStorage.setItem(DNS_STATE_KEY, JSON.stringify(dns));
+      } catch { /* ignore */ }
+    }
+
+    // ── Config ───────────────────────────────────────────────────
+    let apiKeyVisible = false;
+
+    function toggleApiKeyVisibility() {
+      const input = document.getElementById('config-api-key');
+      apiKeyVisible = !apiKeyVisible;
+      input.type = apiKeyVisible ? 'text' : 'password';
+      document.getElementById('eye-icon').innerHTML = apiKeyVisible
+        ? `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.05 10.05 0 013.69-4.622M6.343 6.343A10.003 10.003 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.05 10.05 0 01-2.154 3.448M6.343 6.343L3 3m3.343 3.343l3.657 3.657m0 0a3 3 0 114.243 4.242m-4.243-4.242L17.657 17.657</path>`
+        : `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>`;
+    }
+
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/admin/config');
+        const data = await res.json();
+        document.getElementById('config-router-base').value = data.MITM_ROUTER_BASE || '';
+        document.getElementById('config-api-key').value = data.ROUTER_API_KEY || '';
+      } catch (err) {
+        // silent — config may fail on first load
+      }
+    }
+
+    function updateConfigDisabled(running) {
+      const baseInput = document.getElementById('config-router-base');
+      const keyInput = document.getElementById('config-api-key');
+      const saveBtn = document.getElementById('btn-save-config');
+      const saveMappingsBtn = document.getElementById('btn-save-mappings');
+      [baseInput, keyInput].forEach(el => {
+        if (running) {
+          el.setAttribute('disabled', 'disabled');
+          el.title = 'Disabled while MITM server is running';
+        } else {
+          el.removeAttribute('disabled');
+          el.title = '';
+        }
+      });
+      saveBtn.disabled = running;
+      saveBtn.title = running ? 'Disabled while MITM server is running' : '';
+      if (saveMappingsBtn) {
+        saveMappingsBtn.disabled = running;
+        saveMappingsBtn.classList.toggle('opacity-30', running);
+        saveMappingsBtn.classList.toggle('cursor-not-allowed', running);
+        saveMappingsBtn.title = running ? 'Disabled while MITM server is running' : '';
+      }
+    }
+
+    async function saveConfig() {
+      const btn = document.getElementById('btn-save-config');
+      btn.disabled = true;
+      btn.innerText = 'Saving...';
+      try {
+        const res = await fetch('/api/admin/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            MITM_ROUTER_BASE: document.getElementById('config-router-base').value.trim(),
+            ROUTER_API_KEY: document.getElementById('config-api-key').value
+          })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast('Configuration saved successfully');
+        } else {
+          showToast(result.error || 'Failed to save config', 'error');
+        }
+      } catch (err) {
+        showToast('Network error during config save', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Save Configuration';
+      }
+    }
+
+    // ── Sudo Password Modal ────────────────────────────────────
+    let sudoResolve = null;
+    
+    function openSudoModal(initialError) {
+      return new Promise((resolve) => {
+        sudoResolve = resolve;
+        const modal = document.getElementById('sudo-modal');
+        const input = document.getElementById('sudo-password-input');
+        const error = document.getElementById('sudo-error');
+        input.value = '';
+        if (initialError) {
+          error.textContent = initialError;
+          error.classList.remove('hidden');
+        } else {
+          error.classList.add('hidden');
+          error.textContent = '';
+        }
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modal.querySelector('div:first-child').classList.remove('scale-95');
+        setTimeout(() => input.focus(), 200);
+      });
+    }
+    
+    function submitSudoPassword() {
+      const modal = document.getElementById('sudo-modal');
+      const input = document.getElementById('sudo-password-input');
+      if (!input.value) {
+        const error = document.getElementById('sudo-error');
+        error.textContent = 'Password cannot be empty';
+        error.classList.remove('hidden');
+        input.focus();
+        return;
+      }
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modal.querySelector('div:first-child').classList.add('scale-95');
+      if (sudoResolve) {
+        sudoResolve(input.value);
+        sudoResolve = null;
+      }
+    }
+    
+    function cancelSudoPassword() {
+      const modal = document.getElementById('sudo-modal');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modal.querySelector('div:first-child').classList.add('scale-95');
+      if (sudoResolve) {
+        sudoResolve(null);
+        sudoResolve = null;
+      }
+    }
+    
+    function promptSudoPassword() {
+      // Kept for backward compatibility but now async
+      throw new Error('Use openSudoModal() instead');
+    }
+
+    // ── MITM Toggle ─────────────────────────────────────────────
+    async function toggleMitm() {
+      if (state.mitmRunning) {
+        await stopMitm();
+      } else {
+        await startMitm();
+      }
+    }
+
+    async function startMitm() {
+      updateToggleButton(false, true);
+      try {
+        let sudoPassword = null;
+        if (state.sudoRequired && !state.sudoCached) {
+          // Wait for DOM to paint "Starting..." before showing the modal
+          await new Promise(resolve => requestAnimationFrame(resolve));
+          sudoPassword = await openSudoModal();
+          if (!sudoPassword) {
+            updateToggleButton(false, false);
+            return;
+          }
+        }
+        const body = { sudoPassword };
+        const res = await fetch('/api/admin/mitm/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const result = await res.json();
+        if (result.error) {
+          state.sudoCached = false;
+          // If password was wrong, re-open modal for retry
+          if (result.passwordError) {
+            showToast('Wrong sudo password. Please try again.', 'error');
+            // Re-open modal with error pre-shown
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            sudoPassword = await openSudoModal('Wrong password. Please try again.');
+            if (!sudoPassword) {
+              updateToggleButton(false, false);
+              return;
+            }
+            // Retry with new password
+            const retryBody = { sudoPassword };
+            const retryRes = await fetch('/api/admin/mitm/start', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(retryBody)
+            });
+            const retryResult = await retryRes.json();
+            if (retryResult.error) {
+              showToast(retryResult.error, 'error');
+            } else {
+              showToast('MITM server started successfully');
+            }
+          } else {
+            showToast(result.error, 'error');
+          }
+        } else {
+          showToast('MITM server started successfully');
+        }
+        await loadStatus();
+      } catch (err) {
+        showToast('Failed to start MITM server: ' + err.message, 'error');
+        state.sudoCached = false;
+      } finally {
+        updateToggleButton(state.mitmRunning, false);
+      }
+    }
+
+    async function stopMitm() {
+      if (!confirm('Are you sure you want to stop the MITM server? This will also remove all DNS entries.')) return;
+      updateToggleButton(true, true);
+      try {
+        let sudoPassword = null;
+        if (state.sudoRequired && !state.sudoCached) {
+          // Wait for DOM to paint "Stopping..." before showing the modal
+          await new Promise(resolve => requestAnimationFrame(resolve));
+          sudoPassword = await openSudoModal();
+          if (!sudoPassword) {
+            updateToggleButton(true, false);
+            return;
+          }
+        }
+        const body = { sudoPassword };
+        const res = await fetch('/api/admin/mitm/stop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const result = await res.json();
+        if (result.error) {
+          showToast(result.error, 'error');
+          state.sudoCached = false;
+        } else {
+          showToast('MITM server stopped');
+        }
+        await loadStatus();
+      } catch (err) {
+        showToast('Failed to stop MITM server: ' + err.message, 'error');
+        state.sudoCached = false;
+      } finally {
+        updateToggleButton(state.mitmRunning, false);
+      }
+    }
+
+    // ── Status ───────────────────────────────────────────────────
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/admin/status');
+        const data = await res.json();
+        state = data;
+        updateStatusBadge(data.mitmRunning);
+        updateConfigDisabled(data.mitmRunning);
+        render();
+      } catch (err) {
+        showToast('Failed to connect to Admin API', 'error');
+      }
+    }
+
+    async function toggleDns(tool, enable) {
+      try {
+        let sudoPassword = null;
+        if (state.sudoRequired && !state.sudoCached) {
+          sudoPassword = await openSudoModal();
+          if (!sudoPassword) return;
+        }
+        const res = await fetch('/api/admin/dns/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tool, enable, sudoPassword })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast(`DNS for ${tool} ${enable ? 'ENABLED' : 'DISABLED'}`);
+          // Persist DNS state
+          const currentDns = { ...state.dns, [tool]: enable };
+          saveDnsState(currentDns);
+          loadStatus();
+        } else {
+          showToast(result.error || 'Failed to apply DNS settings', 'error');
+        }
+      } catch (err) {
+        showToast('Network error during DNS action', 'error');
+      }
+    }
+
+    function addRow(tool) {
+      if (!state.mappings[tool]) state.mappings[tool] = {};
+      if (state.mappings[tool][""] !== undefined) return;
+      state.mappings[tool][""] = "";
+      renderMappingsOnly();
+    }
+
+    function removeRow(tool, key) {
+      delete state.mappings[tool][key];
+      renderMappingsOnly();
+    }
+
+    function updateMappingKey(tool, oldKey, newKey) {
+      if (oldKey === newKey) return;
+      const value = state.mappings[tool][oldKey];
+      delete state.mappings[tool][oldKey];
+      state.mappings[tool][newKey] = value;
+    }
+
+    function updateMappingValue(tool, key, value) {
+      state.mappings[tool][key] = value;
+    }
+
+    async function saveAllMappings() {
+      const cleanMappings = {};
+      for (const [tool, maps] of Object.entries(state.mappings)) {
+        cleanMappings[tool] = {};
+        for (const [k, v] of Object.entries(maps)) {
+          if (k.trim() !== "") {
+            cleanMappings[tool][k.trim()] = v.trim();
+          }
+        }
+      }
+
+      try {
+        const res = await fetch('/api/admin/mappings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mappings: cleanMappings })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast('Model mappings saved and loaded successfully');
+          loadStatus();
+        } else {
+          showToast(result.error || 'Failed to save mappings', 'error');
+        }
+      } catch (err) {
+        showToast('Network error during save', 'error');
+      }
+    }
+
+    function render() {
+      document.getElementById('sys-pid').innerText = state.pid || '-';
+      renderDnsList();
+      renderMappingsOnly();
+    }
+
+    function renderDnsList() {
+      const container = document.getElementById('dns-list');
+      container.innerHTML = '';
+      
+      const tools = {
+        antigravity: { label: 'Google Antigravity', hosts: ['daily-cloudcode-pa.googleapis.com', 'cloudcode-pa.googleapis.com'] },
+        copilot: { label: 'GitHub Copilot', hosts: ['api.individual.githubcopilot.com'] },
+        kiro: { label: 'AWS Kiro / CodeWhisperer', hosts: ['q.us-east-1.amazonaws.com', 'codewhisperer.us-east-1.amazonaws.com'] },
+        cursor: { label: 'Cursor IDE', hosts: [] },
+      };
+
+      for (const [id, tool] of Object.entries(tools)) {
+        const active = state.dns[id] !== false; // default ON
+        const hostLines = tool.hosts.map(h => `<span class="text-slate-600 "><span class="text-slate-500 text-[10px]">127.0.0.1</span> ${h}</span>`).join('');
+        
+        const item = document.createElement('div');
+        item.className = 'flex items-start justify-between p-4 bg-white/[0.01] border border-white/[0.03] rounded-xl hover:border-white/[0.06] transition duration-150 cursor-pointer';
+        item.onclick = (e) => {
+          if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
+            const cb = document.getElementById(`switch-${id}`);
+            cb.checked = !cb.checked;
+            toggleDns(id, cb.checked);
+          }
+        };
+        
+        item.innerHTML = `
+          <div class="flex flex-col w-full">
+            <div class="flex items-center justify-between w-full">
+              <div class="flex items-center space-x-3 pointer-events-none">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${active ? 'bg-orange-400' : 'bg-slate-700'}"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 ${active ? 'bg-amber-500' : 'bg-slate-800'}"></span>
+                </span>
+                <span class="text-sm font-semibold text-slate-300">${tool.label}</span>
+              </div>
+              <label for="switch-${id}" class="inline-flex items-center cursor-pointer select-none shrink-0 pointer-events-auto">
+                <input type="checkbox" name="switch-${id}" id="switch-${id}" ${active ? 'checked' : ''} 
+                       class="sr-only peer"
+                       onclick="toggleDns('${id}', this.checked); event.stopPropagation();" />
+                <div class="relative w-11 h-6 bg-slate-800 rounded-full peer-checked:bg-gradient-to-r peer-checked:from-orange-500 peer-checked:to-amber-500 peer-focus:ring-2 peer-focus:ring-orange-500 peer-focus:outline-none after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-slate-300 peer-hover:after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-[20px]"></div>
+              </label>
+            </div>
+            ${hostLines ? `<div class="flex flex-col text-[11px] font-mono mt-2 leading-relaxed text-slate-600 space-y-0.5">${hostLines}</div>` : ''}
+          </div>
+        `;
+        container.appendChild(item);
+      }
+    }
+
+    function renderMappingsOnly() {
+      const container = document.getElementById('mapping-editor');
+      container.innerHTML = '';
+
+      const disabled = state.mitmRunning;
+
+      const toolLabels = {
+        antigravity: 'Google Antigravity',
+        copilot: 'GitHub Copilot',
+        kiro: 'AWS Kiro',
+        cursor: 'Cursor IDE'
+      };
+
+      for (const [tool, label] of Object.entries(toolLabels)) {
+        const mappings = state.mappings[tool] || {};
+        const section = document.createElement('div');
+        section.className = 'border border-white/[0.03] rounded-xl p-5 bg-white/[0.005] hover:border-white/[0.08] transition duration-150';
+        
+        let rowsHtml = '';
+        for (const [key, value] of Object.entries(mappings)) {
+          const safeKey = key.replace(/'/g, "\\'");
+          rowsHtml += `
+            <div class="flex items-center space-x-3 mt-3">
+              <input type="text" placeholder="Incoming Model (from IDE)" value="${key}" 
+                     class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
+                     onchange="updateMappingKey('${tool}', '${safeKey}', this.value)"
+                     ${disabled ? 'disabled' : ''} />
+              <span class="text-slate-600 text-sm font-bold font-mono">&rarr;</span>
+              <input type="text" placeholder="Target 9Router Model" value="${value}" 
+                     class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
+                     onchange="updateMappingValue('${tool}', '${safeKey}', this.value)"
+                     ${disabled ? 'disabled' : ''} />
+              <button onclick="removeRow('${tool}', '${safeKey}')" class="px-2 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500" title="Remove">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              </button>
+            </div>
+          `;
+        }
+
+        section.innerHTML = `
+          <div class="flex items-center justify-between border-b border-white/[0.03] pb-3">
+            <h3 class="text-sm font-bold text-slate-300 flex items-center space-x-2 heading">
+              <span class="w-1.5 h-3 rounded-full bg-orange-500"></span>
+              <span>${label}</span>
+            </h3>
+            <button onclick="addRow('${tool}')" class="text-xs text-orange-400 hover:text-orange-300 font-bold flex items-center space-x-1.5 transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500 rounded px-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+              <span>Add Routing</span>
+            </button>
+          </div>
+          <div class="space-y-1">
+            ${rowsHtml || '<p class="text-xs text-slate-600 mt-4 italic text-center py-2">No mappings active. Click "Add Routing" to map a model.</p>'}
+          </div>
+        `;
+        container.appendChild(section);
+      }
+    }
+
+    // ── Tab Switching ──────────────────────────────────────────
+    let currentTab = 'console';
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active', 'text-slate-200');
+        btn.classList.add('text-slate-400');
+        btn.style.borderBottomColor = 'transparent';
+      });
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      const activePanel = document.getElementById(`panel-${tab}`);
+      if (activeBtn) {
+        activeBtn.classList.add('active', 'text-slate-200');
+        activeBtn.style.borderBottomColor = '#f97316';
+      }
+      if (activePanel) activePanel.classList.remove('hidden');
+
+      // Load console logs when switching to console tab
+      if (tab === 'console') resumeConsolePoll();
+    }
+
+    // ── Console Logs ───────────────────────────────────────────
+    let consolePollTimer = null;
+    let expandedLogId = null;
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    /** @param {string} id */
+    function toggleLogDetail(id) {
+      // Click same one → close
+      if (expandedLogId === id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+        expandedLogId = null;
+        resumeConsolePoll();
+        return;
+      }
+      // Close previous
+      if (expandedLogId) {
+        const prev = document.getElementById(expandedLogId);
+        if (prev) prev.classList.add('hidden');
+      }
+      // Open new
+      expandedLogId = id;
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('hidden');
+      pauseConsolePoll();
+    }
+
+    function pauseConsolePoll() {
+      if (consolePollTimer) {
+        clearInterval(consolePollTimer);
+        consolePollTimer = null;
+      }
+    }
+
+    function resumeConsolePoll() {
+      if (!consolePollTimer) {
+        if (currentTab === 'console') loadConsoleLogs();
+        consolePollTimer = setInterval(() => {
+          if (currentTab === 'console') loadConsoleLogs();
+        }, 5000);
+      }
+    }
+
+    function copyToClipboard(sourceId, btn) {
+      const el = document.getElementById(sourceId);
+      if (!el) return;
+      const text = el.textContent || el.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = orig; }, 1500);
+        }
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = orig; }, 1500);
+        }
+      });
+    }
+
+    function formatBody(str) {
+      if (!str) return '<span class=\"text-slate-600 italic\">No body captured</span>';
+      const s = String(str).substring(0, 2000);
+      // Try to pretty-print JSON
+      try {
+        const parsed = JSON.parse(s);
+        return '<pre class=\"text-[10px] text-emerald-300 leading-relaxed whitespace-pre-wrap font-mono max-h-60 overflow-y-auto\">' + escapeHtml(JSON.stringify(parsed, null, 2)) + '</pre>';
+      } catch {}
+      // Not JSON — show as-is
+      return '<pre class=\"text-[10px] text-slate-300 leading-relaxed whitespace-pre-wrap font-mono max-h-60 overflow-y-auto\">' + escapeHtml(s) + '</pre>';
+    }
+
+    async function loadConsoleLogs() {
+      try {
+        const res = await fetch('/api/admin/console/logs');
+        const logs = await res.json();
+        const container = document.getElementById('console-log');
+        if (!container) return;
+
+        if (!Array.isArray(logs) || logs.length === 0) {
+          container.innerHTML = '<div class="text-center text-slate-600 py-12 italic">No requests logged yet. Start MITM and send some API calls.</div>';
+          return;
+        }
+
+        let html = '';
+        for (const log of logs) {
+          const ts = new Date(log.timestamp).toLocaleTimeString('en-US', { hour12: false });
+          const actionColor = log.action === 'intercepted' ? 'text-emerald-400' : 'text-slate-500';
+          const actionIcon = log.action === 'intercepted' ? '⚡' : '➡';
+          const toolBadge = log.tool
+            ? `<span class="px-1.5 py-0.5 rounded bg-white/[0.04] text-orange-300 font-bold text-[10px] uppercase">${log.tool}</span>`
+            : '';
+          const logId = `log-body-${log.id || Math.random().toString(36).slice(2, 8)}`;
+          const copyReqId = `copy-req-${log.id || Math.random().toString(36).slice(2, 8)}`;
+          const copyResId = `copy-res-${log.id || Math.random().toString(36).slice(2, 8)}`;
+          const rawReqBody = (log.requestBody || '').substring(0, 2000);
+          const rawResBody = (log.responseBody || '').substring(0, 2000);
+          const reqBody = formatBody(log.requestBody);
+          const resBody = formatBody(log.responseBody);
+
+          html += `
+            <div class="border border-white/[0.03] rounded-lg bg-white/[0.01] hover:border-white/[0.08] transition duration-150 cursor-pointer"
+                 onclick="toggleLogDetail('${logId}')">
+              <div class="p-3">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex items-center space-x-2 min-w-0 flex-1">
+                    <span class="text-slate-500 shrink-0">${ts}</span>
+                    <span class="${actionColor} shrink-0 font-bold">${actionIcon}</span>
+                    <span class="text-slate-300 font-semibold truncate">${log.method || 'GET'}</span>
+                    <span class="text-slate-400 truncate text-[11px]">${log.host || ''}${log.url || ''}</span>
+                    ${toolBadge}
+                  </div>
+                  <span class="text-slate-600 text-[10px] shrink-0 font-mono">${log.duration || '-'}ms</span>
+                </div>
+                <div class="flex items-center space-x-2 mt-1.5 text-[11px]">
+                  ${log.model ? `<span class="text-slate-500">Model:</span><span class="text-slate-300 font-mono">${log.model}</span>` : ''}
+                  ${log.mappedModel ? `<span class="text-orange-400 font-bold">&rarr;</span><span class="text-orange-300 font-mono font-semibold">${log.mappedModel}</span>` : ''}
+                  ${!log.model && !log.mappedModel ? `<span class="text-slate-600 italic">${log.action === 'passthrough' ? 'Passthrough (no mapping)' : 'Forwarded'}</span>` : ''}
+                  ${log.responseStatus ? `<span class="ml-auto text-slate-600 font-mono text-[10px]">Status: <span class="${log.responseStatus >= 400 ? 'text-red-400' : 'text-emerald-400'}">${log.responseStatus}</span></span>` : ''}
+                </div>
+              </div>
+              <!-- Expandable detail section -->
+              <div id="${logId}" class="hidden border-t border-white/[0.03]">
+                <div class="grid grid-cols-2 gap-0 divide-x divide-white/[0.03]">
+                  <div class="p-3">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 flex items-center justify-between">
+                      <span>➡️ Request Body</span>
+                      <button onclick="copyToClipboard('${copyReqId}', this)" class="text-[9px] text-orange-400 hover:text-orange-300 font-bold uppercase tracking-wider transition duration-150 cursor-pointer focus:outline-none">Copy</button>
+                    </div>
+                    <div id="${copyReqId}" class="hidden">${escapeHtml(rawReqBody)}</div>
+                    ${reqBody}
+                  </div>
+                  <div class="p-3">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 flex items-center justify-between">
+                      <span>⬅️ Response Body</span>
+                      <button onclick="copyToClipboard('${copyResId}', this)" class="text-[9px] text-orange-400 hover:text-orange-300 font-bold uppercase tracking-wider transition duration-150 cursor-pointer focus:outline-none">Copy</button>
+                    </div>
+                    <div id="${copyResId}" class="hidden">${escapeHtml(rawResBody)}</div>
+                    ${resBody}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        container.innerHTML = html;
+      } catch (err) {
+        // Silent — console logs may not be available yet
+      }
+    }
+
+    async function clearConsoleLogs() {
+      try {
+        await fetch('/api/admin/console/clear', { method: 'POST' });
+        loadConsoleLogs();
+        showToast('Console logs cleared');
+      } catch (err) {
+        showToast('Failed to clear logs', 'error');
+      }
+    }
+
+    // ── Periodic Polling ────────────────────────────────────────
+    let pollInterval = null;
+
+    function startPolling() {
+      if (pollInterval) clearInterval(pollInterval);
+      loadStatus();
+      loadConfig();
+      pollInterval = setInterval(() => {
+        loadStatus();
+      }, 5000);
+      // Start console polling separately (auto-paused when expanded)
+      resumeConsolePoll();
+    }
+
+    // Override DNS state with persisted state on load
+    const savedDns = loadDnsState();
+    // We'll apply this after the first status load patches state.dns
+    
+    const origLoadStatus = loadStatus;
+    loadStatus = async function() {
+      try {
+        const res = await fetch('/api/admin/status');
+        const data = await res.json();
+        state = data;
+        // Merge persisted DNS state over server-reported state (for tools not yet toggled)
+        const saved = loadDnsState();
+        const hasSavedState = Object.keys(saved).length > 0;
+        for (const [tool, enabled] of Object.entries(saved)) {
+          if (data.dns[tool] === undefined) data.dns[tool] = enabled;
+        }
+        // First visit: default all DNS to ON
+        if (!hasSavedState) {
+          for (const tool of ['antigravity', 'copilot', 'kiro', 'cursor']) {
+            data.dns[tool] = true;
+          }
+        }
+        state = data;
+        updateStatusBadge(data.mitmRunning);
+        updateConfigDisabled(data.mitmRunning);
+        render();
+      } catch (err) {
+        showToast('Failed to connect to Admin API', 'error');
+      }
+    };
+
+    // Init
+    startPolling();
+  </script>
+</body>
+</html>

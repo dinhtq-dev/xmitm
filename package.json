@@ -1,0 +1,16 @@
+{
+  "name": "xmitm",
+  "version": "1.0.0",
+  "description": "XMITM — Express MITM proxy for AI coding tool traffic interception",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "start:admin": "node index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.6.0",
+    "dotenv": "^17.4.2",
+    "node-forge": "^1.4.0",
+    "node-machine-id": "^1.1.12"
+  }
+}

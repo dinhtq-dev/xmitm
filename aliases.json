@@ -1,0 +1,27 @@
+{
+  "antigravity": {
+    "gemini-default": "antigravity",
+    "gemini-pro-agent": "antigravity",
+    "gemini-3.5-flash": "antigravity",
+    "gemini-3.5-flash-high": "antigravity",
+    "gemini-3.5-flash-low": "antigravity",
+    "gemini-3.1-pro-low": "antigravity",
+    "gemini-3.1-pro-high": "antigravity",
+    "claude-sonnet-4-6": "antigravity",
+    "claude-opus-4-6-thinking": "antigravity",
+    "gpt-oss-120b-medium": "antigravity",
+    "gemini-3-flash": "antigravity"
+  },
+  "copilot": {
+    "gpt-4o": "antigravity",
+    "claude-3.5-sonnet": "antigravity"
+  },
+  "kiro": {
+    "nova-pro": "antigravity",
+    "default": "antigravity"
+  },
+  "cursor": {
+    "gpt-4o": "antigravity",
+    "claude-3-opus": "antigravity"
+  }
+}
