@@ -1,0 +1,54 @@
+{
+  "activeProvider": "gemini",
+  "providers": {
+    "openai": {
+      "baseUrl": "https://api.openai.com/v1",
+      "keys": [
+        "AIzaSyBVhIKrT_2uGryjZyv8cwKrqLXJpoNOIOM"
+      ],
+      "enabled": false
+    },
+    "gemini": {
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "keys": [
+        "AIzaSyBVhIKrT_2uGryjZyv8cwKrqLXJpoNOIOM"
+      ],
+      "enabled": true
+    },
+    "anthropic": {
+      "baseUrl": "https://api.anthropic.com/v1",
+      "keys": [],
+      "enabled": false
+    },
+    "deepseek": {
+      "baseUrl": "https://api.deepseek.com/v1",
+      "keys": [],
+      "enabled": false
+    },
+    "groq": {
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "keys": [],
+      "enabled": false
+    },
+    "mistral": {
+      "baseUrl": "https://api.mistral.ai/v1",
+      "keys": [],
+      "enabled": false
+    },
+    "together": {
+      "baseUrl": "https://api.together.xyz/v1",
+      "keys": [],
+      "enabled": false
+    },
+    "cohere": {
+      "baseUrl": "https://api.cohere.ai/v1",
+      "keys": [],
+      "enabled": false
+    },
+    "perplexity": {
+      "baseUrl": "https://api.perplexity.ai",
+      "keys": [],
+      "enabled": false
+    }
+  }
+}

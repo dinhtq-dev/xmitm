@@ -33,6 +33,7 @@ const {
 const { getMitmAlias } = require("./dbReader");
 const { getAllCredentials } = require("./credentials");
 const { init: initLogStore, getLogs, clearLogs } = require("./logStore");
+const { loadProviders, saveProviders, forwardRequest } = require("./providerRouter");
 
 // Initialize log store at startup
 initLogStore();
@@ -397,7 +398,7 @@ async function handleRequest(req, res) {
   // CORS for localhost
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
     res.writeHead(204);
@@ -409,6 +410,19 @@ async function handleRequest(req, res) {
   const pathname = url.pathname;
 
   try {
+    // ── Favicon ───────────────────────────────────────────────────
+    if (pathname === "/favicon.png" || pathname === "/favicon.ico") {
+      const favPath = path.join(__dirname, "favicon.png");
+      if (fs.existsSync(favPath)) {
+        res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" });
+        res.end(fs.readFileSync(favPath));
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+      return;
+    }
+
     // ── Serve admin.html ──────────────────────────────────────────
     if (pathname === "/" || pathname === "/admin") {
       const html = fs.readFileSync(path.join(__dirname, "admin.html"), "utf8");
@@ -643,6 +657,55 @@ async function handleRequest(req, res) {
       clearLogs();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: true }));
+      return;
+    }
+
+    // ── Providers API ─────────────────────────────────────────────
+    if (pathname === "/api/admin/providers" && req.method === "GET") {
+      const data = loadProviders();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(data));
+      return;
+    }
+
+    if (pathname === "/api/admin/providers" && req.method === "POST") {
+      const bodyBuffer = await collectBodyRaw(req);
+      try {
+        const incoming = JSON.parse(bodyBuffer.toString());
+        const existing = loadProviders();
+        if (Object.prototype.hasOwnProperty.call(incoming, "activeProvider")) {
+          existing.activeProvider = incoming.activeProvider || null;
+        }
+        if (incoming.providers) {
+          for (const [pid, pdata] of Object.entries(incoming.providers)) {
+            if (!existing.providers[pid]) {
+              existing.providers[pid] = { baseUrl: pdata.baseUrl || "", keys: [], enabled: false };
+            }
+            if (pdata.keys !== undefined) existing.providers[pid].keys = pdata.keys;
+            if (pdata.baseUrl !== undefined) existing.providers[pid].baseUrl = pdata.baseUrl;
+            if (pdata.enabled !== undefined) existing.providers[pid].enabled = pdata.enabled === true;
+          }
+        }
+        // Sync enabled flags with activeProvider (only one active)
+        for (const [pid, prov] of Object.entries(existing.providers)) {
+          prov.enabled = pid === existing.activeProvider;
+        }
+        saveProviders(existing);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, data: existing }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
+    // ── Provider Router /v1/* ─────────────────────────────────────
+    // This is the main router endpoint — MITM_ROUTER_BASE should point here.
+    // Receives requests from MITM, forwards to the active provider.
+    if (pathname.startsWith("/v1")) {
+      const bodyBuffer = await collectBodyRaw(req);
+      forwardRequest(req, res, bodyBuffer);
       return;
     }
 

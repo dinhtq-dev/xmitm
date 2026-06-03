@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MITM Standalone Control Center</title>
+  <link rel="icon" type="image/png" href="/favicon.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -223,6 +225,10 @@
           <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           DNS Redirection
         </button>
+        <button id="tab-providers" onclick="switchTab('providers')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
+          <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+          API Providers
+        </button>
       </div>
 
       <!-- Tab Content: Console -->
@@ -284,6 +290,31 @@
           </div>
         </div>
       </div>
+
+      <!-- Tab Content: API Providers -->
+      <div id="panel-providers" class="tab-panel hidden">
+        <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
+          <div class="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl"></div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-white/[0.03]">
+            <div>
+              <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                <span>API Providers & Keys</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-1">Bật provider (toggle) để route request. Mỗi card lưu baseUrl + keys riêng.</p>
+            </div>
+          </div>
+          <div class="mb-5 p-4 rounded-xl bg-black/30 border border-indigo-500/20">
+            <div class="text-[10px] uppercase tracking-wider text-indigo-300 font-bold mb-2">OpenAI-compatible endpoint</div>
+            <div class="text-[11px] font-mono text-slate-400 break-all">POST http://127.0.0.1:3000/v1/chat/completions</div>
+            <pre class="mt-2 text-[10px] font-mono text-slate-500 overflow-x-auto">{"model":"deepseek-v4-flash-free","messages":[{"role":"user","content":"..."}]}</pre>
+            <p class="text-[10px] text-slate-600 mt-2">curl, Codex CLI, OpenAI SDK — trỏ <span class="text-slate-400">base URL</span> về <span class="font-mono text-indigo-300">http://127.0.0.1:3000/v1</span></p>
+          </div>
+          <div id="providers-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Dynamic provider cards -->
+          </div>
+        </div>
+      </div>
     </div>
   </main>
   </div>
@@ -291,6 +322,35 @@
   <footer class="border-t border-white/[0.01] py-6 text-center text-xs text-slate-700">
     Crafted by dinhtq — MITM Promax v1.0 &bull; Secure API interception &amp; model routing
   </footer>
+
+  <!-- Add Key Modal -->
+  <div id="add-key-modal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200" onclick="if(event.target===this) closeAddKeyModal()">
+    <div class="glass-card rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 border border-white/[0.06] transform scale-95 transition-transform duration-200">
+      <div class="flex items-center space-x-3 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-200">Add Provider Key</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Add an API key for a provider</p>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-1.5">Provider Name</label>
+          <input id="new-provider-input" type="text" class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition duration-150" placeholder="e.g. openai, anthropic, google...">
+        </div>
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-1.5">API Key</label>
+          <input id="new-key-input" type="password" class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition duration-150" placeholder="sk-..." onkeydown="if(event.key==='Enter') confirmAddKey()">
+        </div>
+        <div class="flex items-center space-x-3 pt-2">
+          <button onclick="closeAddKeyModal()" class="flex-1 px-4 py-2.5 bg-white/[0.03] hover:bg-white/[0.06] text-slate-400 hover:text-slate-200 font-bold text-xs rounded-xl transition duration-150 cursor-pointer focus:outline-none">Cancel</button>
+          <button onclick="confirmAddKey()" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold text-xs rounded-xl transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400">Add Key</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Notification Toast -->
   <div id="toast" class="fixed bottom-6 right-6 px-5 py-3.5 rounded-xl shadow-2xl text-xs font-bold transition duration-300 transform translate-y-20 opacity-0 z-50 flex items-center space-x-2.5">
@@ -1134,8 +1194,282 @@
       }
     };
 
+    // ── API Providers & Keys ──────────────────────────────────────
+
+    const KNOWN_PROVIDERS = [
+      { id: 'openai',      label: 'OpenAI',             icon: '🤖', desc: 'GPT-4, GPT-4o, o1...', defaultBaseUrl: 'https://api.openai.com/v1' },
+      { id: 'anthropic',   label: 'Anthropic',          icon: '🅰️',  desc: 'Claude 3.x / 4.x', defaultBaseUrl: 'https://api.anthropic.com/v1' },
+      { id: 'deepseek',    label: 'DeepSeek',           icon: '🔍', desc: 'DeepSeek-V3 / R1', defaultBaseUrl: 'https://api.deepseek.com/v1' },
+      { id: 'groq',        label: 'Groq',               icon: '⚡', desc: 'Ultra-fast inference', defaultBaseUrl: 'https://api.groq.com/openai/v1' },
+      { id: 'mistral',     label: 'Mistral AI',         icon: '💨', desc: 'Mistral / Mixtral', defaultBaseUrl: 'https://api.mistral.ai/v1' },
+      { id: 'together',    label: 'Together AI',        icon: '🤝', desc: 'Open-source models', defaultBaseUrl: 'https://api.together.xyz/v1' },
+      { id: 'cohere',      label: 'Cohere',             icon: '🪐', desc: 'Command R+', defaultBaseUrl: 'https://api.cohere.ai/v1' },
+      { id: 'perplexity',  label: 'Perplexity',         icon: '🔮', desc: 'Search-augmented AI', defaultBaseUrl: 'https://api.perplexity.ai' },
+      { id: 'gemini',      label: 'Google Gemini',      icon: '✨', desc: 'Gemini 2.0 / 1.5 Flash...', defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai' },
+    ];
+
+    function ensureProviderEntry(pid) {
+      const known = KNOWN_PROVIDERS.find(p => p.id === pid);
+      if (!serverProviders.providers[pid]) {
+        serverProviders.providers[pid] = {
+          baseUrl: known ? known.defaultBaseUrl : '',
+          keys: [],
+          enabled: false
+        };
+      }
+      if (!serverProviders.providers[pid].baseUrl && known) {
+        serverProviders.providers[pid].baseUrl = known.defaultBaseUrl;
+      }
+      if (serverProviders.providers[pid].enabled === undefined) {
+        serverProviders.providers[pid].enabled = serverProviders.activeProvider === pid;
+      }
+      return serverProviders.providers[pid];
+    }
+
+    // Server-synced state
+    let serverProviders = { activeProvider: null, providers: {} };
+
+    // ── Load from server ──
+    async function loadProviders() {
+      try {
+        const res = await fetch('/api/admin/providers');
+        serverProviders = await res.json();
+      } catch { /* keep existing */ }
+      renderProviders();
+    }
+
+    // ── Save to server (providers.json) ──
+    async function syncToServer() {
+      try {
+        const res = await fetch('/api/admin/providers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(serverProviders)
+        });
+        const result = await res.json();
+        if (!res.ok || result.success === false) {
+          showToast(result.error || 'Failed to save config', 'error');
+          return false;
+        }
+        if (result.data) serverProviders = result.data;
+        return true;
+      } catch (e) {
+        showToast('Failed to save to server', 'error');
+        return false;
+      }
+    }
+
+    // ── Chọn provider active (radio / switch) ──
+    async function selectActiveProvider(pid) {
+      const prov = ensureProviderEntry(pid);
+      if (!prov.keys || prov.keys.length === 0) {
+        showToast('Thêm API key trước (+ Key), rồi chọn Active', 'error');
+        renderProviders();
+        return;
+      }
+      serverProviders.activeProvider = pid;
+      for (const id of Object.keys(serverProviders.providers)) {
+        serverProviders.providers[id].enabled = id === pid;
+      }
+      const saved = await syncToServer();
+      renderProviders();
+      if (saved) showToast(`Active: ${pid}`);
+    }
+
+    async function toggleProviderSwitch(pid) {
+      const isActive = serverProviders.activeProvider === pid;
+      if (isActive) {
+        serverProviders.activeProvider = null;
+        for (const id of Object.keys(serverProviders.providers)) {
+          serverProviders.providers[id].enabled = false;
+        }
+        const saved = await syncToServer();
+        renderProviders();
+        if (saved) showToast('Đã tắt routing');
+      } else {
+        await selectActiveProvider(pid);
+      }
+    }
+
+    async function saveProviderBaseUrl(pid) {
+      const input = document.getElementById(`provider-baseurl-${pid}`);
+      if (!input) return;
+      const prov = ensureProviderEntry(pid);
+      prov.baseUrl = input.value.trim();
+      await syncToServer();
+      showToast(`Saved baseUrl for ${pid}`);
+    }
+
+    // ── Render provider cards ──
+    function renderProviders() {
+      const container = document.getElementById('providers-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      KNOWN_PROVIDERS.forEach(p => {
+        const prov = ensureProviderEntry(p.id);
+        const keys = prov.keys || [];
+        const isActive = serverProviders.activeProvider === p.id && prov.enabled !== false;
+        const hasKeys = keys.length > 0;
+        const baseUrl = prov.baseUrl || p.defaultBaseUrl || '';
+
+        const card = document.createElement('div');
+        card.className = `flex flex-col p-5 rounded-xl border transition duration-200 ${isActive ? 'bg-indigo-500/10 border-indigo-500/30 shadow-lg shadow-indigo-500/10' : hasKeys ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-white/[0.01] border-white/[0.03] hover:border-white/[0.07]'}`;
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base ${isActive ? 'bg-indigo-500/20' : 'bg-white/[0.04]'}">${p.icon}</div>
+              <div>
+                <div class="flex items-center space-x-2">
+                  <span class="relative flex h-2 w-2 shrink-0">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isActive ? 'bg-indigo-400' : 'bg-slate-700'}"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 ${isActive ? 'bg-indigo-400' : 'bg-slate-700'}"></span>
+                  </span>
+                  <span class="text-sm font-bold text-slate-200">${p.label}</span>
+                  ${isActive ? '<span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300">ROUTING</span>' : ''}
+                </div>
+                <span class="text-[10px] font-mono mt-0.5 block ${isActive ? 'text-indigo-400' : 'text-slate-600'}">${isActive ? 'ENABLED' : 'OFF'}</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+              <button type="button" onclick="event.stopPropagation(); selectActiveProvider('${p.id}')"
+                      class="inline-flex items-center cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-full p-0.5"
+                      title="Chọn Active (cần có key)">
+                <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${isActive ? 'border-indigo-400 bg-indigo-500/30' : 'border-slate-600 bg-transparent hover:border-slate-400'}">
+                  ${isActive ? '<span class="w-1.5 h-1.5 rounded-full bg-indigo-300"></span>' : ''}
+                </span>
+              </button>
+              <button type="button" onclick="event.stopPropagation(); toggleProviderSwitch('${p.id}')"
+                      class="relative w-11 h-6 rounded-full shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${isActive ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-slate-800'} ${hasKeys ? '' : 'opacity-60'}"
+                      title="${hasKeys ? 'Bật/tắt routing' : 'Cần + Key trước'}">
+                <span class="absolute top-0.5 left-[2px] h-5 w-5 rounded-full bg-slate-300 transition-transform ${isActive ? 'translate-x-[20px] bg-white' : ''}"></span>
+              </button>
+              <button type="button" onclick="event.stopPropagation(); openAddKeyModal('${p.id}')" class="px-2 py-1 text-[10px] font-bold rounded-lg transition duration-150 cursor-pointer focus:outline-none ${hasKeys ? 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30' : 'bg-white/[0.04] text-slate-400 hover:text-slate-200 hover:bg-white/[0.08]'}">+ Key</button>
+            </div>
+          </div>
+          <div class="mb-3 space-y-1.5">
+            <label class="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Upstream baseUrl</label>
+            <div class="flex gap-2">
+              <input id="provider-baseurl-${p.id}" type="text" value="${baseUrl.replace(/"/g, '&quot;')}"
+                     placeholder="${p.defaultBaseUrl}"
+                     class="flex-1 min-w-0 bg-black/40 border border-white/[0.05] rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-mono focus:outline-none focus:border-indigo-500/50"
+                     onkeydown="if(event.key==='Enter') saveProviderBaseUrl('${p.id}')" />
+              <button onclick="saveProviderBaseUrl('${p.id}')" class="px-2 py-1 text-[10px] font-bold rounded-lg bg-white/[0.04] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition cursor-pointer shrink-0">Save</button>
+            </div>
+          </div>
+          ${keys.length > 0 ? `
+          <div class="border-t border-white/[0.03] pt-3 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Keys (${keys.length})</span>
+              ${keys.length > 1 ? `<button onclick="rotateProviderKeys('${p.id}')" class="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center space-x-1 cursor-pointer">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <span>Rotate</span>
+              </button>` : ''}
+            </div>
+            ${keys.map((k, i) => `
+              <div class="flex items-center justify-between bg-black/30 rounded-lg px-3 py-1.5">
+                <span class="text-[11px] font-mono text-slate-400 truncate flex-1 mr-2 ${i === 0 ? 'text-indigo-300' : ''}">${i === 0 ? '▶ ' : ''}${k.length > 18 ? k.slice(0, 12) + '…' + k.slice(-6) : k}</span>
+                <button onclick="removeProviderKey('${p.id}', ${i})" class="text-rose-500 hover:text-rose-400 text-xs shrink-0 cursor-pointer">✖</button>
+              </div>`).join('')}
+          </div>` : `
+          <div class="border-t border-white/[0.03] pt-3">
+            <span class="text-[11px] text-slate-600 italic">No keys added yet</span>
+          </div>`}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ── Modal ──
+    let _addKeyTargetProvider = null;
+
+    function openAddKeyModal(providerId) {
+      _addKeyTargetProvider = providerId;
+      const modal = document.getElementById('add-key-modal');
+      const inp = document.getElementById('new-provider-input');
+      const providerObj = KNOWN_PROVIDERS.find(p => p.id === providerId);
+      inp.value = providerObj ? providerObj.label : providerId;
+      inp.readOnly = true;
+      inp.classList.add('opacity-50', 'cursor-default');
+      document.getElementById('new-key-input').value = '';
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modal.classList.add('opacity-100', 'pointer-events-auto');
+      modal.querySelector('.glass-card')?.classList.remove('scale-95');
+      modal.querySelector('.glass-card')?.classList.add('scale-100');
+      setTimeout(() => document.getElementById('new-key-input').focus(), 150);
+    }
+
+    function closeAddKeyModal() {
+      const modal = document.getElementById('add-key-modal');
+      modal.classList.remove('opacity-100', 'pointer-events-auto');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modal.querySelector('.glass-card')?.classList.remove('scale-100');
+      modal.querySelector('.glass-card')?.classList.add('scale-95');
+      document.getElementById('new-provider-input').readOnly = false;
+      document.getElementById('new-provider-input').classList.remove('opacity-50', 'cursor-default');
+      document.getElementById('new-key-input').value = '';
+      _addKeyTargetProvider = null;
+    }
+
+    async function confirmAddKey() {
+      const key = document.getElementById('new-key-input').value.trim();
+      if (!key) { showToast('API key cannot be empty', 'error'); return; }
+      const pid = _addKeyTargetProvider;
+      if (!pid) { showToast('No provider selected', 'error'); return; }
+
+      const addBtn = document.querySelector('#add-key-modal button[onclick="confirmAddKey()"]');
+      if (addBtn) { addBtn.disabled = true; addBtn.textContent = 'Saving...'; }
+
+      ensureProviderEntry(pid);
+      serverProviders.providers[pid].keys.push(key);
+      if (!serverProviders.activeProvider) {
+        serverProviders.activeProvider = pid;
+        serverProviders.providers[pid].enabled = true;
+        for (const id of Object.keys(serverProviders.providers)) {
+          if (id !== pid) serverProviders.providers[id].enabled = false;
+        }
+      }
+
+      const saved = await syncToServer();
+      if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Add Key'; }
+
+      if (!saved) return;
+
+      renderProviders();
+      closeAddKeyModal();
+      showToast(`Key saved to config (${pid})`);
+    }
+
+    async function removeProviderKey(pid, idx) {
+      const prov = serverProviders.providers[pid];
+      if (!prov) return;
+      prov.keys.splice(idx, 1);
+      // If no keys left and was active, unset
+      if (prov.keys.length === 0) {
+        prov.enabled = false;
+        if (serverProviders.activeProvider === pid) {
+          serverProviders.activeProvider = null;
+        }
+      }
+      await syncToServer();
+      renderProviders();
+    }
+
+    async function rotateProviderKeys(pid) {
+      const prov = serverProviders.providers[pid];
+      if (!prov || !prov.keys || prov.keys.length <= 1) return;
+      const [first, ...rest] = prov.keys;
+      prov.keys = [...rest, first];
+      await syncToServer();
+      renderProviders();
+      showToast(`Keys rotated for ${pid}`);
+    }
+
     // Init
     startPolling();
+    loadProviders();
   </script>
 </body>
 </html>
+
