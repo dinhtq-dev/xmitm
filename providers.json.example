@@ -1,19 +1,10 @@
 {
-  "activeProvider": "gemini",
+  "activeProvider": null,
   "providers": {
     "openai": {
       "baseUrl": "https://api.openai.com/v1",
-      "keys": [
-        "AIzaSyBVhIKrT_2uGryjZyv8cwKrqLXJpoNOIOM"
-      ],
+      "keys": [],
       "enabled": false
-    },
-    "gemini": {
-      "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
-      "keys": [
-        "AIzaSyBVhIKrT_2uGryjZyv8cwKrqLXJpoNOIOM"
-      ],
-      "enabled": true
     },
     "anthropic": {
       "baseUrl": "https://api.anthropic.com/v1",
@@ -47,6 +38,11 @@
     },
     "perplexity": {
       "baseUrl": "https://api.perplexity.ai",
+      "keys": [],
+      "enabled": false
+    },
+    "gemini": {
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
       "keys": [],
       "enabled": false
     }

@@ -2,8 +2,13 @@
 node_modules/
 .pnpm-store/
 
-# Environment
+# Environment & secrets
 .env
+.env.*
+!.env.example
+
+# Provider API keys (configured via Admin UI or copied from providers.json.example)
+providers.json
 
 # Runtime data
 data/
