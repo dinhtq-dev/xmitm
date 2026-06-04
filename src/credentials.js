@@ -130,6 +130,87 @@ function getCursorCredentials() {
   };
 }
 
+function getCodexAuthPath() {
+  const codexHome = process.env.CODEX_HOME
+    ? path.resolve(process.env.CODEX_HOME)
+    : path.join(HOME, ".codex");
+  return path.join(codexHome, "auth.json");
+}
+
+function getChatGPTCredentials() {
+  const codexHome = process.env.CODEX_HOME
+    ? path.resolve(process.env.CODEX_HOME)
+    : path.join(HOME, ".codex");
+  const authPath = getCodexAuthPath();
+  const data = readJsonFile(authPath);
+
+  if (!data) {
+    return {
+      provider: "chatgpt",
+      error: `Khong tim thay ${authPath}. Chay: codex login`,
+      paths: { auth: authPath, codexHome },
+    };
+  }
+
+  const authMode = String(data.auth_mode || data.authMode || "").toLowerCase();
+
+  if (authMode === "apikey" && data.OPENAI_API_KEY) {
+    return {
+      provider: "chatgpt",
+      authMode: "apikey",
+      accessToken: data.OPENAI_API_KEY,
+      refreshToken: null,
+      extra: { authMode: "apikey" },
+      paths: { auth: authPath, codexHome },
+    };
+  }
+
+  const tokens = data.tokens && typeof data.tokens === "object" ? data.tokens : data;
+  const accessToken = tokens.access_token || tokens.accessToken || null;
+  const refreshToken = tokens.refresh_token || tokens.refreshToken || null;
+  const accountId = tokens.account_id || tokens.accountId || data.account_id || null;
+
+  if (accessToken) {
+    let expiresAt = null;
+    const exp = tokens.expires_at || tokens.expiresAt || data.expires_at;
+    if (exp) {
+      expiresAt = typeof exp === "number"
+        ? new Date(exp > 1e12 ? exp : exp * 1000).toISOString()
+        : String(exp);
+    }
+    return {
+      provider: "chatgpt",
+      authMode: "oauth",
+      accessToken,
+      refreshToken,
+      extra: {
+        authMode: authMode || "chatgpt",
+        accountId,
+        email: data.email || accountId,
+        expiresAt,
+      },
+      paths: { auth: authPath, codexHome },
+    };
+  }
+
+  if (data.OPENAI_API_KEY) {
+    return {
+      provider: "chatgpt",
+      authMode: "apikey",
+      accessToken: data.OPENAI_API_KEY,
+      refreshToken: null,
+      extra: { authMode: "apikey-fallback" },
+      paths: { auth: authPath, codexHome },
+    };
+  }
+
+  return {
+    provider: "chatgpt",
+    error: "auth.json khong co token. Chay: codex login (ChatGPT) hoac them OPENAI_API_KEY",
+    paths: { auth: authPath, codexHome },
+  };
+}
+
 function getCopilotCredentials() {
   // Copilot stores its data inside the host IDE's globalStorage (e.g. Cursor or VS Code).
   // We check Cursor's state.vscdb first, then VS Code.
@@ -277,6 +358,7 @@ function getAntigravityCredentials() {
 
 const PROVIDERS = {
   cursor: getCursorCredentials,
+  chatgpt: getChatGPTCredentials,
   copilot: getCopilotCredentials,
   kiro: getKiroCredentials,
   antigravity: getAntigravityCredentials,

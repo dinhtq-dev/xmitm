@@ -301,14 +301,26 @@
                 <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                 <span>API Providers & Keys</span>
               </h2>
-              <p class="text-xs text-slate-500 mt-1">Bật provider (toggle) để route request. Mỗi card lưu baseUrl + keys riêng.</p>
+              <p class="text-xs text-slate-500 mt-1">Keys + OAuth tokens luu chung file <span class="font-mono text-slate-400">auth-store.json</span> (hoac <span class="font-mono text-slate-400">data/auth-store.json</span>)</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button type="button" onclick="exportAuthBackup()" class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.04] text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 border border-white/[0.06] cursor-pointer">Export backup</button>
+              <label class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.04] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-white/[0.06] cursor-pointer">
+                Import backup
+                <input type="file" accept="application/json,.json" class="hidden" onchange="importAuthBackupFile(event)" />
+              </label>
             </div>
           </div>
           <div class="mb-5 p-4 rounded-xl bg-black/30 border border-indigo-500/20">
-            <div class="text-[10px] uppercase tracking-wider text-indigo-300 font-bold mb-2">OpenAI-compatible endpoint</div>
+            <div class="text-[10px] uppercase tracking-wider text-indigo-300 font-bold mb-2">OpenAI-compatible endpoint (CLI / SDK)</div>
             <div class="text-[11px] font-mono text-slate-400 break-all">POST http://127.0.0.1:3000/v1/chat/completions</div>
-            <pre class="mt-2 text-[10px] font-mono text-slate-500 overflow-x-auto">{"model":"deepseek-v4-flash-free","messages":[{"role":"user","content":"..."}]}</pre>
-            <p class="text-[10px] text-slate-600 mt-2">curl, Codex CLI, OpenAI SDK — trỏ <span class="text-slate-400">base URL</span> về <span class="font-mono text-indigo-300">http://127.0.0.1:3000/v1</span></p>
+            <pre class="mt-2 text-[10px] font-mono text-slate-500 overflow-x-auto">{"model":"gpt-4o","messages":[{"role":"user","content":"..."}]}</pre>
+            <p class="text-[10px] text-slate-600 mt-2">Codex CLI: <span class="font-mono text-indigo-300">OPENAI_BASE_URL=http://127.0.0.1:3000/v1</span> — provider <span class="text-indigo-300">ChatGPT / Codex</span> hoac OpenAI.</p>
+          </div>
+          <div class="mb-5 p-4 rounded-xl bg-black/30 border border-orange-500/20">
+            <div class="text-[10px] uppercase tracking-wider text-orange-300 font-bold mb-2">IDE thật (Antigravity / Cursor / Copilot)</div>
+            <p class="text-[10px] text-slate-500 leading-relaxed">Tab <span class="text-orange-300 font-bold">DNS Redirection</span> → bật tool → Start MITM (sudo). IDE tự đi qua proxy; token đọc từ app local hoặc OAuth Login ở đây.</p>
+            <p class="text-[10px] text-slate-600 mt-1.5">Hai cách dùng song song: CLI qua endpoint <span class="font-mono text-slate-400">/v1</span> + IDE qua DNS MITM.</p>
           </div>
           <div id="providers-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <!-- Dynamic provider cards -->
@@ -796,7 +808,7 @@
         antigravity: { label: 'Google Antigravity', icon: '🌐', hosts: ['daily-cloudcode-pa.googleapis.com', 'cloudcode-pa.googleapis.com'] },
         copilot: { label: 'GitHub Copilot', icon: '🤖', hosts: ['api.individual.githubcopilot.com'] },
         kiro: { label: 'AWS Kiro / CodeWhisperer', icon: '☁️', hosts: ['q.us-east-1.amazonaws.com', 'codewhisperer.us-east-1.amazonaws.com'] },
-        cursor: { label: 'Cursor IDE', icon: '✏️', hosts: [] },
+        cursor: { label: 'Cursor IDE', icon: '✏️', hosts: ['api2.cursor.sh'] },
       };
 
       for (const [id, tool] of Object.entries(tools)) {
@@ -957,7 +969,7 @@
 
       // Load console logs when switching to console tab
       if (tab === 'console') resumeConsolePoll();
-      if (tab === 'providers' && !providerQuotaTimer) startProviderQuotaPoll();
+      if (tab === 'providers') activateProvidersTab();
     }
 
     // ── Console Logs ───────────────────────────────────────────
@@ -1197,25 +1209,261 @@
 
     // ── API Providers & Keys ──────────────────────────────────────
 
-    const KNOWN_PROVIDERS = [
-      { id: 'openai',      label: 'OpenAI',             icon: '🤖', desc: 'GPT-4, GPT-4o, o1...', defaultBaseUrl: 'https://api.openai.com/v1' },
-      { id: 'anthropic',   label: 'Anthropic',          icon: '🅰️',  desc: 'Claude 3.x / 4.x', defaultBaseUrl: 'https://api.anthropic.com/v1' },
-      { id: 'deepseek',    label: 'DeepSeek',           icon: '🔍', desc: 'DeepSeek-V3 / R1', defaultBaseUrl: 'https://api.deepseek.com/v1' },
-      { id: 'groq',        label: 'Groq',               icon: '⚡', desc: 'Ultra-fast inference', defaultBaseUrl: 'https://api.groq.com/openai/v1' },
-      { id: 'mistral',     label: 'Mistral AI',         icon: '💨', desc: 'Mistral / Mixtral', defaultBaseUrl: 'https://api.mistral.ai/v1' },
-      { id: 'together',    label: 'Together AI',        icon: '🤝', desc: 'Open-source models', defaultBaseUrl: 'https://api.together.xyz/v1' },
-      { id: 'cohere',      label: 'Cohere',             icon: '🪐', desc: 'Command R+', defaultBaseUrl: 'https://api.cohere.ai/v1' },
-      { id: 'perplexity',  label: 'Perplexity',         icon: '🔮', desc: 'Search-augmented AI', defaultBaseUrl: 'https://api.perplexity.ai' },
-      { id: 'gemini',      label: 'Google Gemini',      icon: '✨', desc: 'Gemini 2.0 / 1.5 Flash...', defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai' },
+    let providerCatalog = [];
+    let oauthStatus = [];
+    let oauthConnections = [];
+    const providerAuthTab = {};
+
+    async function loadProviderCatalog() {
+      try {
+        const res = await fetch('/api/admin/providers/meta');
+        const data = await res.json();
+        providerCatalog = data.providers || [];
+        oauthStatus = data.oauth || [];
+      } catch {
+        providerCatalog = [];
+        oauthStatus = [];
+      }
+    }
+
+    async function loadOAuthConnections() {
+      try {
+        const res = await fetch('/api/admin/oauth/connections');
+        const data = await res.json();
+        oauthConnections = data.connections || [];
+      } catch {
+        oauthConnections = [];
+      }
+    }
+
+    function providerSupports(pid, mode) {
+      const p = getCatalogEntry(pid);
+      if (p?.authModes?.includes(mode)) return true;
+      const prov = serverProviders.providers?.[pid];
+      if (mode === 'apikey' && prov?.keys?.length) return true;
+      if (mode === 'oauth' && prov?.authMode === 'oauth') return true;
+      return false;
+    }
+
+    function getProviderAuthTab(pid) {
+      if (providerAuthTab[pid]) return providerAuthTab[pid];
+      const p = getCatalogEntry(pid);
+      providerAuthTab[pid] = p?.authModes?.[0] || 'apikey';
+      return providerAuthTab[pid];
+    }
+
+    function setProviderAuthTab(pid, mode) {
+      providerAuthTab[pid] = mode;
+      renderProviders();
+    }
+
+    function oauthConfigured(pid) {
+      return oauthStatus.find(x => x.providerId === pid)?.configured === true;
+    }
+
+    function getOAuthStatus(pid) {
+      return oauthStatus.find(x => x.providerId === pid) || null;
+    }
+
+    function oauthUsesLocalLogin(pid) {
+      if (LOCAL_LOGIN_PROVIDERS.has(pid)) return true;
+      return getOAuthStatus(pid)?.loginMode === 'local';
+    }
+
+    function oauthLoginDisabled(pid) {
+      const cfg = getOAuthStatus(pid);
+      if (cfg?.loginMode === 'local') return null;
+      if (cfg?.disabled) return cfg.configError || 'OAuth chua ho tro';
+      return null;
+    }
+
+    async function importLocalOAuth(pid) {
+      try {
+        const res = await fetch('/api/admin/oauth/import-local?provider=' + encodeURIComponent(pid), { method: 'POST' });
+        if (res.status === 404) throw new Error('Admin server can cu — restart: npm start');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Import that bai');
+        await loadProviders();
+        await loadOAuthConnections();
+        renderProviders();
+        if (pid === 'chatgpt') {
+          if (data.kind === 'apikey') showToast('Da import Codex API key vao ChatGPT');
+          else showToast('Da login ChatGPT: ' + (data.label || data.email || 'OK'));
+        } else if (pid === 'cursor') {
+          showToast('Da login Cursor: ' + (data.label || data.email || 'OK'));
+        } else {
+          showToast('Da import login local: ' + (data.label || pid));
+        }
+      } catch (e) {
+        showToast(e.message || 'Import that bai', 'error');
+      }
+    }
+
+    function localLoginButtonLabel(pid) {
+      if (pid === 'chatgpt') return 'Login tu Codex';
+      if (pid === 'cursor') return 'Login tu Cursor';
+      return 'Login local';
+    }
+
+    async function startOAuthLogin(pid) {
+      if (oauthUsesLocalLogin(pid)) {
+        await importLocalOAuth(pid);
+        return;
+      }
+      const disabled = oauthLoginDisabled(pid);
+      if (disabled) {
+        showToast(disabled, 'error');
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/oauth/authorize?provider=' + encodeURIComponent(pid));
+        if (res.status === 404) {
+          throw new Error('Admin server can cu — restart: npm start');
+        }
+        const data = await res.json();
+        if (!data.success || !data.url) throw new Error(data.error || 'OAuth failed');
+        window.location.href = data.url;
+      } catch (e) {
+        showToast(e.message || 'OAuth loi', 'error');
+      }
+    }
+
+    async function disconnectOAuth(connectionId) {
+      if (!confirm('Ngat ket noi OAuth nay?')) return;
+      await fetch('/api/admin/oauth/connections/' + encodeURIComponent(connectionId), { method: 'DELETE' });
+      await loadOAuthConnections();
+      renderProviders();
+      showToast('Da ngat OAuth');
+    }
+
+    async function exportAuthBackup() {
+      try {
+        const res = await fetch('/api/admin/auth/backup/export');
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'xmitm-auth-backup.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast('Da export backup');
+      } catch {
+        showToast('Export that bai', 'error');
+      }
+    }
+
+    async function importAuthBackupFile(ev) {
+      const file = ev.target.files?.[0];
+      ev.target.value = '';
+      if (!file) return;
+      const merge = confirm('Import MERGE (OK) giu du lieu cu + them moi?\nCancel = REPLACE toan bo auth store.');
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        const res = await fetch('/api/admin/auth/backup/import' + (merge ? '?merge=1' : ''), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(json),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Import failed');
+        await loadProviders();
+        await loadOAuthConnections();
+        renderProviders();
+        showToast(merge ? 'Import merge OK' : 'Import replace OK');
+      } catch (e) {
+        showToast(e.message || 'Import that bai', 'error');
+      }
+    }
+
+    function renderOAuthConnections(pid) {
+      const rows = oauthConnections.filter(c => c.provider === pid);
+      if (!rows.length) {
+        const cfg = oauthStatus.find(x => x.providerId === pid);
+        if (cfg?.disabled) {
+          return '<p class="text-[10px] text-slate-500 italic py-1">' + (cfg.configError || 'OAuth chua ho tro') + '</p>';
+        }
+        if (cfg?.loginMode === 'local') {
+          const hint = pid === 'chatgpt'
+            ? 'Chua ket noi — bam <span class="text-emerald-400">Login tu Codex</span> (can <span class="font-mono">codex login</span> truoc)'
+            : 'Chua ket noi — bam <span class="text-emerald-400">Login tu Cursor</span> (can mo Cursor IDE da dang nhap)';
+          return '<p class="text-[10px] text-slate-500 italic py-1">' + hint + '</p>';
+        }
+        const hint = cfg?.configured ? 'Chua co tai khoan — bam Login' : (cfg?.configError || 'Cau hinh OAuth trong .env');
+        return '<p class="text-[10px] text-slate-500 italic py-1">' + hint + '</p>';
+      }
+      return rows.map(c => `
+        <div class="flex items-center justify-between gap-2 rounded-md bg-indigo-500/10 border border-indigo-500/20 px-2 py-1.5">
+          <div class="min-w-0">
+            <div class="text-[10px] font-semibold text-indigo-200 truncate">${c.label || c.email || c.id}</div>
+            <div class="text-[9px] font-mono text-slate-500">${c.tokenPreview || ''}${c.expiresAt ? ' · exp ' + new Date(c.expiresAt).toLocaleDateString('vi-VN') : ''}</div>
+          </div>
+          <button type="button" onclick="disconnectOAuth('${c.id}')" class="text-[10px] text-rose-400 hover:text-rose-300 cursor-pointer shrink-0">Ngat</button>
+        </div>`).join('');
+    }
+
+    function renderAuthModeTabs(pid) {
+      const hasKey = providerSupports(pid, 'apikey');
+      const hasOauth = providerSupports(pid, 'oauth');
+      if (hasKey && hasOauth) {
+        const tab = getProviderAuthTab(pid);
+        const btn = (mode, label) => `<button type="button" onclick="setProviderAuthTab('${pid}','${mode}')" class="px-2 py-0.5 text-[9px] font-bold rounded-md cursor-pointer ${tab === mode ? 'bg-indigo-500/25 text-indigo-300' : 'text-slate-500 hover:text-slate-300'}">${label}</button>`;
+        return '<div class="flex gap-1 mb-2">' + btn('apikey', 'API Key') + btn('oauth', 'Login') + '</div>';
+      }
+      return '';
+    }
+
+    const KNOWN_PROVIDERS_FALLBACK = [
+      { id: 'openai', label: 'OpenAI', icon: '🤖', desc: 'GPT-4, Codex CLI…', defaultBaseUrl: 'https://api.openai.com/v1', authModes: ['apikey'] },
+      { id: 'chatgpt', label: 'ChatGPT / Codex', icon: '💬', desc: 'Codex CLI login', defaultBaseUrl: 'https://api.openai.com/v1', authModes: ['apikey', 'oauth'] },
+      { id: 'anthropic', label: 'Anthropic', icon: '🅰️', desc: 'Claude API key', defaultBaseUrl: 'https://api.anthropic.com/v1', authModes: ['apikey'] },
+      { id: 'claude', label: 'Claude Code', icon: '🧠', desc: 'Claude OAuth', defaultBaseUrl: 'https://api.anthropic.com/v1', authModes: ['oauth'] },
+      { id: 'deepseek', label: 'DeepSeek', icon: '🔍', desc: 'DeepSeek-V3 / R1', defaultBaseUrl: 'https://api.deepseek.com/v1', authModes: ['apikey'] },
+      { id: 'groq', label: 'Groq', icon: '⚡', desc: 'Ultra-fast inference', defaultBaseUrl: 'https://api.groq.com/openai/v1', authModes: ['apikey'] },
+      { id: 'mistral', label: 'Mistral AI', icon: '💨', desc: 'Mistral / Mixtral', defaultBaseUrl: 'https://api.mistral.ai/v1', authModes: ['apikey'] },
+      { id: 'together', label: 'Together AI', icon: '🤝', desc: 'Open-source models', defaultBaseUrl: 'https://api.together.xyz/v1', authModes: ['apikey'] },
+      { id: 'cohere', label: 'Cohere', icon: '🪐', desc: 'Command R+', defaultBaseUrl: 'https://api.cohere.ai/v1', authModes: ['apikey'] },
+      { id: 'perplexity', label: 'Perplexity', icon: '🔮', desc: 'Search-augmented AI', defaultBaseUrl: 'https://api.perplexity.ai', authModes: ['apikey'] },
+      { id: 'gemini', label: 'Google Gemini', icon: '✨', desc: 'AI Studio API key', defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', authModes: ['apikey'] },
+      { id: 'gemini-cli', label: 'Gemini CLI', icon: '🖥️', desc: 'Google OAuth', defaultBaseUrl: 'https://cloudcode-pa.googleapis.com', authModes: ['oauth'] },
+      { id: 'antigravity', label: 'Antigravity', icon: '🚀', desc: 'Google OAuth', defaultBaseUrl: 'https://cloudcode-pa.googleapis.com', authModes: ['oauth'] },
+      { id: 'copilot', label: 'GitHub Copilot', icon: '🐙', desc: 'GitHub OAuth', defaultBaseUrl: 'https://api.github.com', authModes: ['oauth'] },
+      { id: 'cursor', label: 'Cursor IDE', icon: '✏️', desc: 'Login tu Cursor app tren may', defaultBaseUrl: 'https://api2.cursor.sh', authModes: ['oauth'] },
     ];
 
+    const LOCAL_LOGIN_PROVIDERS = new Set(['cursor', 'chatgpt']);
+
+    function getProviderList() {
+      const byId = new Map();
+      for (const p of KNOWN_PROVIDERS_FALLBACK) byId.set(p.id, p);
+      for (const p of providerCatalog) byId.set(p.id, { ...byId.get(p.id), ...p });
+      for (const pid of Object.keys(serverProviders.providers || {})) {
+        if (!byId.has(pid)) {
+          byId.set(pid, {
+            id: pid,
+            label: pid,
+            icon: '🔌',
+            defaultBaseUrl: serverProviders.providers[pid]?.baseUrl || '',
+            authModes: serverProviders.providers[pid]?.authMode === 'oauth' ? ['oauth'] : ['apikey'],
+          });
+        }
+      }
+      const order = KNOWN_PROVIDERS_FALLBACK.map(p => p.id);
+      const rest = [...byId.keys()].filter(id => !order.includes(id));
+      return [...order, ...rest].map(id => byId.get(id)).filter(Boolean);
+    }
+
+    function getCatalogEntry(pid) {
+      return providerCatalog.find(p => p.id === pid) || KNOWN_PROVIDERS_FALLBACK.find(p => p.id === pid);
+    }
+
     function ensureProviderEntry(pid) {
-      const known = KNOWN_PROVIDERS.find(p => p.id === pid);
+      const known = getCatalogEntry(pid);
       if (!serverProviders.providers[pid]) {
         serverProviders.providers[pid] = {
           baseUrl: known ? known.defaultBaseUrl : '',
           keys: [],
-          enabled: false
+          enabled: false,
+          authMode: known?.authModes?.[0] || 'apikey',
         };
       }
       if (!serverProviders.providers[pid].baseUrl && known) {
@@ -1233,11 +1481,15 @@
     let providerQuotaLoading = false;
     let providerQuotaUpdatedAt = null;
     let providerQuotaTimer = null;
+    const quotaKeyReloading = new Set();
 
-    function startProviderQuotaPoll() {
-      stopProviderQuotaPoll();
-      loadProviderQuotas(true);
-      providerQuotaTimer = setInterval(() => loadProviderQuotas(true), 60000);
+    function activateProvidersTab() {
+      Promise.all([loadProviderCatalog(), loadProviders(), loadOAuthConnections()]).then(() => {
+        loadProviderQuotas(true);
+      });
+      if (!providerQuotaTimer) {
+        providerQuotaTimer = setInterval(() => loadProviderQuotas(true), 60000);
+      }
     }
     function stopProviderQuotaPoll() {
       if (providerQuotaTimer) { clearInterval(providerQuotaTimer); providerQuotaTimer = null; }
@@ -1256,32 +1508,65 @@
       if (pct >= 20) return 'bg-amber-500';
       return 'bg-rose-500';
     }
-    function formatKeyQuota(pid, idx) {
-      const pq = providerQuota[pid];
-      const q = pq && pq.keys && pq.keys[idx] ? pq.keys[idx] : null;
-      if (!q && providerQuotaLoading) {
-        return '<div class="mt-2 space-y-1"><div class="h-2 w-full rounded-full bg-slate-800 overflow-hidden"><div class="h-full w-1/3 rounded-full bg-slate-600 animate-pulse"></div></div><span class="text-[9px] font-mono text-slate-500">Dang kiem tra...</span></div>';
-      }
-      if (!q) {
-        return '<div class="mt-2 space-y-1"><div class="h-2 w-full rounded-full bg-slate-800 overflow-hidden"><div class="h-full w-1/3 rounded-full bg-slate-500 animate-pulse"></div></div><span class="text-[9px] font-mono text-slate-500">Dang kiem tra...</span></div>';
-      }
-      const pct = quotaPercent(q);
-      const bar = quotaBarColor(q, pct);
-      const label = q.label || (q.ok ? 'Key OK' : '—');
-      const src = q.source === '9router' ? ' · 9router' : '';
-      const pctText = q.ok ? (pct + '%') : '';
-      return '<div class="mt-2 space-y-1">'
-        + '<div class="h-2 w-full rounded-full bg-slate-800/80 overflow-hidden">'
-        + '<div class="h-full rounded-full transition-all duration-300 ' + bar + '" style="width:' + pct + '%"></div>'
+    function maskKey(k) {
+      if (!k) return '';
+      if (k.length <= 18) return k;
+      return k.slice(0, 10) + '…' + k.slice(-6);
+    }
+    function renderKeyProgressBar(pid, idx, key) {
+      const q = providerQuota[pid]?.keys?.[idx] || null;
+      const reloadId = pid + ':' + idx;
+      const isReloading = quotaKeyReloading.has(reloadId);
+      const hasQuota = q && !providerQuotaLoading && !isReloading;
+      const pct = hasQuota ? quotaPercent(q) : 0;
+      const bar = hasQuota ? quotaBarColor(q, pct) : 'bg-slate-600/40';
+      const fillW = hasQuota ? pct : 0;
+      const active = idx === 0;
+      const errLabel = hasQuota && !q.ok && q.label ? q.label : '';
+      return ''
+        + '<div class="group flex items-center gap-1.5">'
+        + '<div class="flex-1 min-w-0">'
+        + '<div class="relative h-6 rounded-md overflow-hidden bg-slate-900/80 border border-white/[0.06]">'
+        + '<div class="absolute inset-y-0 left-0 transition-all duration-500 ' + bar + '/80" style="width:' + fillW + '%"></div>'
+        + '<div class="relative z-10 flex items-center justify-between gap-2 h-full min-h-[24px] px-2 py-0">'
+        + '<span class="text-[10px] leading-none font-mono font-medium truncate ' + (hasQuota && q.ok ? 'text-white' : 'text-slate-300') + '">'
+        + (active ? '▶ ' : '') + maskKey(key) + '</span>'
+        + '<div class="flex items-center gap-1 shrink-0 h-full">'
+        + (hasQuota && q.ok ? '<span class="text-[9px] leading-none font-bold font-mono text-white/90 tabular-nums">' + pct + '%</span>' : '')
+        + (hasQuota && !q.ok ? '<span class="text-[9px] leading-none font-bold font-mono text-rose-300">!</span>' : '')
+        + '<button type="button" onclick="event.stopPropagation(); removeProviderKey(\'' + pid + '\', ' + idx + ')" class="flex items-center justify-center h-full text-rose-400/80 hover:text-rose-300 text-[10px] leading-none cursor-pointer px-0.5" title="Xoa key">✖</button>'
+        + '</div></div></div>'
+        + (errLabel ? '<p class="mt-0.5 text-[8px] leading-tight font-mono text-rose-400/90 truncate" title="' + errLabel.replace(/"/g, '&quot;') + '">' + errLabel + '</p>' : '')
         + '</div>'
-        + '<div class="flex items-center justify-between gap-2">'
-        + '<span class="text-[9px] font-mono ' + (q.ok ? 'text-emerald-400' : 'text-slate-500') + '">' + label + src + '</span>'
-        + (pctText ? '<span class="text-[9px] font-bold font-mono text-emerald-300">' + pctText + '</span>' : '')
-        + '</div></div>';
+        + '<button type="button" onclick="event.stopPropagation(); reloadKeyQuota(\'' + pid + '\', ' + idx + ')" '
+        + 'class="shrink-0 flex items-center justify-center w-6 h-6 rounded-md text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition cursor-pointer disabled:opacity-40" '
+        + 'title="Kiem tra lai quota" ' + (isReloading ? 'disabled' : '') + '>'
+        + '<svg class="w-3.5 h-3.5 ' + (isReloading ? 'animate-spin' : '') + '" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+        + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>'
+        + '</svg></button>'
+        + '</div>';
+    }
+    async function reloadKeyQuota(pid, idx) {
+      const reloadId = pid + ':' + idx;
+      if (quotaKeyReloading.has(reloadId)) return;
+      quotaKeyReloading.add(reloadId);
+      renderProviders();
+      try {
+        const res = await fetch('/api/admin/providers/quota?refresh=1&provider=' + encodeURIComponent(pid) + '&index=' + idx);
+        const data = await res.json();
+        if (data.success && data.key) {
+          if (!providerQuota[pid]) providerQuota[pid] = { keys: [], aggregate: data.key };
+          if (!providerQuota[pid].keys) providerQuota[pid].keys = [];
+          providerQuota[pid].keys[idx] = data.key;
+          providerQuota[pid].aggregate = providerQuota[pid].keys.find((k) => k.ok) || data.key;
+        }
+      } catch (e) { /* silent */ }
+      quotaKeyReloading.delete(reloadId);
+      renderProviders();
     }
     async function loadProviderQuotas(refresh) {
       const onProvidersTab = currentTab === 'providers';
-      if (onProvidersTab) { providerQuotaLoading = true; renderProviders(); }
+      if (onProvidersTab) providerQuotaLoading = true;
       try {
         const res = await fetch('/api/admin/providers/quota' + (refresh ? '?refresh=1' : ''));
         const data = await res.json();
@@ -1325,8 +1610,11 @@
     // ── Chọn provider active (radio / switch) ──
     async function selectActiveProvider(pid) {
       const prov = ensureProviderEntry(pid);
-      if (!prov.keys || prov.keys.length === 0) {
-        showToast('Thêm API key trước (+ Key), rồi chọn Active', 'error');
+      const oauthRows = oauthConnections.filter(c => c.provider === pid);
+      const hasKeys = prov.keys && prov.keys.length > 0;
+      const hasOauth = oauthRows.length > 0;
+      if (!hasKeys && !hasOauth) {
+        showToast('Them API key hoac Login OAuth truoc', 'error');
         renderProviders();
         return;
       }
@@ -1354,30 +1642,29 @@
       }
     }
 
-    async function saveProviderBaseUrl(pid) {
-      const input = document.getElementById(`provider-baseurl-${pid}`);
-      if (!input) return;
-      const prov = ensureProviderEntry(pid);
-      prov.baseUrl = input.value.trim();
-      await syncToServer();
-      showToast(`Saved baseUrl for ${pid}`);
-    }
-
     // ── Render provider cards ──
     function renderProviders() {
       const container = document.getElementById('providers-list');
       if (!container) return;
       container.innerHTML = '';
 
-      KNOWN_PROVIDERS.forEach(p => {
+      const list = getProviderList();
+      list.forEach(p => {
         const prov = ensureProviderEntry(p.id);
         const keys = prov.keys || [];
+        const oauthRows = oauthConnections.filter(c => c.provider === p.id);
         const isActive = serverProviders.activeProvider === p.id && prov.enabled !== false;
         const hasKeys = keys.length > 0;
+        const hasOauth = oauthRows.length > 0;
+        const canRoute = hasKeys || hasOauth;
         const baseUrl = prov.baseUrl || p.defaultBaseUrl || '';
+        const authTab = getProviderAuthTab(p.id);
+        const showKeys = providerSupports(p.id, 'apikey') && (!providerSupports(p.id, 'oauth') || authTab === 'apikey');
+        const showOauth = providerSupports(p.id, 'oauth') && (!providerSupports(p.id, 'apikey') || authTab === 'oauth');
+        const oauthDisabledMsg = oauthLoginDisabled(p.id);
 
         const card = document.createElement('div');
-        card.className = `flex flex-col p-5 rounded-xl border transition duration-200 ${isActive ? 'bg-indigo-500/10 border-indigo-500/30 shadow-lg shadow-indigo-500/10' : hasKeys ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-white/[0.01] border-white/[0.03] hover:border-white/[0.07]'}`;
+        card.className = `flex flex-col p-5 rounded-xl border transition duration-200 ${isActive ? 'bg-indigo-500/10 border-indigo-500/30 shadow-lg shadow-indigo-500/10' : (canRoute || hasOauth) ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-white/[0.01] border-white/[0.03] hover:border-white/[0.07]'}`;
 
         card.innerHTML = `
           <div class="flex items-start justify-between mb-3">
@@ -1398,31 +1685,31 @@
             <div class="flex items-center space-x-2 shrink-0">
               <button type="button" onclick="event.stopPropagation(); selectActiveProvider('${p.id}')"
                       class="inline-flex items-center cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-full p-0.5"
-                      title="Chọn Active (cần có key)">
+                      title="Chon Active (can key hoac OAuth)">
                 <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${isActive ? 'border-indigo-400 bg-indigo-500/30' : 'border-slate-600 bg-transparent hover:border-slate-400'}">
                   ${isActive ? '<span class="w-1.5 h-1.5 rounded-full bg-indigo-300"></span>' : ''}
                 </span>
               </button>
               <button type="button" onclick="event.stopPropagation(); toggleProviderSwitch('${p.id}')"
-                      class="relative w-11 h-6 rounded-full shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${isActive ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-slate-800'} ${hasKeys ? '' : 'opacity-60'}"
-                      title="${hasKeys ? 'Bật/tắt routing' : 'Cần + Key trước'}">
+                      class="relative w-11 h-6 rounded-full shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${isActive ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-slate-800'} ${canRoute ? '' : 'opacity-60'}"
+                      title="${canRoute ? 'Bat/tat routing' : 'Can API key hoac Login OAuth'}">
                 <span class="absolute top-0.5 left-[2px] h-5 w-5 rounded-full bg-slate-300 transition-transform ${isActive ? 'translate-x-[20px] bg-white' : ''}"></span>
               </button>
-              <button type="button" onclick="event.stopPropagation(); openAddKeyModal('${p.id}')" class="px-2 py-1 text-[10px] font-bold rounded-lg transition duration-150 cursor-pointer focus:outline-none ${hasKeys ? 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30' : 'bg-white/[0.04] text-slate-400 hover:text-slate-200 hover:bg-white/[0.08]'}">+ Key</button>
+              ${showKeys ? `<button type="button" onclick="event.stopPropagation(); openAddKeyModal('${p.id}')" class="px-2 py-1 text-[10px] font-bold rounded-lg transition duration-150 cursor-pointer focus:outline-none ${hasKeys ? 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30' : 'bg-white/[0.04] text-slate-400 hover:text-slate-200 hover:bg-white/[0.08]'}">+ Key</button>` : ''}
+              ${showOauth ? (oauthUsesLocalLogin(p.id)
+                ? `<button type="button" onclick="event.stopPropagation(); startOAuthLogin('${p.id}')" class="px-2 py-1 text-[10px] font-bold rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 cursor-pointer" title="Doc session tu app da login tren may">${localLoginButtonLabel(p.id)}</button>`
+                : oauthDisabledMsg
+                ? `<span class="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-800 text-slate-500 cursor-not-allowed" title="${oauthDisabledMsg.replace(/"/g, '&quot;')}">Login (chua ho tro)</span>`
+                : `<button type="button" onclick="event.stopPropagation(); startOAuthLogin('${p.id}')" class="px-2 py-1 text-[10px] font-bold rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 cursor-pointer" title="Login OAuth">Login</button>`) : ''}
             </div>
           </div>
-          <div class="mb-3 space-y-1.5">
+          <div class="mb-3 space-y-1">
             <label class="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Upstream baseUrl</label>
-            <div class="flex gap-2">
-              <input id="provider-baseurl-${p.id}" type="text" value="${baseUrl.replace(/"/g, '&quot;')}"
-                     placeholder="${p.defaultBaseUrl}"
-                     class="flex-1 min-w-0 bg-black/40 border border-white/[0.05] rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-mono focus:outline-none focus:border-indigo-500/50"
-                     onkeydown="if(event.key==='Enter') saveProviderBaseUrl('${p.id}')" />
-              <button onclick="saveProviderBaseUrl('${p.id}')" class="px-2 py-1 text-[10px] font-bold rounded-lg bg-white/[0.04] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition cursor-pointer shrink-0">Save</button>
-            </div>
+            <div class="bg-black/30 border border-white/[0.04] rounded-md px-2 py-1 text-[10px] text-slate-500 font-mono break-all leading-snug">${baseUrl || p.defaultBaseUrl || '—'}</div>
           </div>
-          ${keys.length > 0 ? `
-          <div class="border-t border-white/[0.03] pt-3 space-y-2">
+          ${renderAuthModeTabs(p.id)}
+          ${showKeys ? (keys.length > 0 ? `
+          <div class="border-t border-white/[0.03] pt-3 space-y-1.5">
             <div class="flex items-center justify-between">
               <span class="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Keys (${keys.length})</span>
               ${keys.length > 1 ? `<button onclick="rotateProviderKeys('${p.id}')" class="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center space-x-1 cursor-pointer">
@@ -1430,25 +1717,16 @@
                 <span>Rotate</span>
               </button>` : ''}
             </div>
-            ${keys.map((k, i) => {
-              const q = providerQuota[p.id]?.keys?.[i];
-              const keyOk = q && q.ok;
-              const rowBg = keyOk
-                ? 'bg-emerald-500/25 border-2 border-emerald-400/50 shadow-sm shadow-emerald-500/10'
-                : (q && !q.ok ? 'bg-rose-500/15 border border-rose-500/40' : 'bg-emerald-500/18 border-2 border-emerald-500/35');
-              return `
-              <div class="rounded-lg px-3 py-2.5 ${rowBg}">
-                <div class="flex items-center justify-between gap-2 mb-1">
-                  <span class="text-[11px] font-mono font-semibold text-emerald-200 truncate flex-1">${i === 0 ? '▶ ' : ''}${k.length > 18 ? k.slice(0, 12) + '…' + k.slice(-6) : k}</span>
-                  <button type="button" onclick="event.stopPropagation(); removeProviderKey('${p.id}', ${i})" class="text-rose-400 hover:text-rose-300 text-xs shrink-0 cursor-pointer px-1">✖</button>
-                </div>
-                ${formatKeyQuota(p.id, i)}
-              </div>`;
-            }).join('')}
+            ${keys.map((k, i) => renderKeyProgressBar(p.id, i, k)).join('')}
           </div>` : `
           <div class="border-t border-white/[0.03] pt-3">
-            <span class="text-[11px] text-slate-600 italic">No keys added yet</span>
-          </div>`}
+            <span class="text-[11px] text-slate-600 italic">Chua co API key</span>
+          </div>`) : ''}
+          ${showOauth ? `
+          <div class="border-t border-white/[0.03] pt-3 space-y-1.5">
+            <span class="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Tai khoan OAuth</span>
+            ${renderOAuthConnections(p.id)}
+          </div>` : ''}
         `;
         container.appendChild(card);
       });
@@ -1461,7 +1739,7 @@
       _addKeyTargetProvider = providerId;
       const modal = document.getElementById('add-key-modal');
       const inp = document.getElementById('new-provider-input');
-      const providerObj = KNOWN_PROVIDERS.find(p => p.id === providerId);
+      const providerObj = getCatalogEntry(providerId);
       inp.value = providerObj ? providerObj.label : providerId;
       inp.readOnly = true;
       inp.classList.add('opacity-50', 'cursor-default');
@@ -1512,6 +1790,7 @@
       renderProviders();
       closeAddKeyModal();
       showToast(`Key saved to config (${pid})`);
+      loadProviderQuotas(true);
     }
 
     async function removeProviderKey(pid, idx) {
@@ -1527,6 +1806,7 @@
       }
       await syncToServer();
       renderProviders();
+      loadProviderQuotas(true);
     }
 
     async function rotateProviderKeys(pid) {
@@ -1541,8 +1821,20 @@
 
     // Init
     startPolling();
-    loadProviders();
-    startProviderQuotaPoll();
+    loadProviderCatalog().then(loadProviders);
+    (function handleOAuthReturn() {
+      const q = new URLSearchParams(location.search);
+      if (q.get('tab') === 'providers') switchTab('providers');
+      if (q.get('oauth') === 'ok') {
+        showToast('OAuth thanh cong: ' + (q.get('provider') || ''));
+        switchTab('providers');
+        history.replaceState({}, '', location.pathname);
+      } else if (q.get('oauth') === 'error') {
+        showToast(decodeURIComponent(q.get('msg') || 'OAuth loi'), 'error');
+        switchTab('providers');
+        history.replaceState({}, '', location.pathname);
+      }
+    })();
   </script>
 </body>
 </html>

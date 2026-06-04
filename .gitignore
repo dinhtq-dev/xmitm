@@ -7,8 +7,10 @@ node_modules/
 .env.*
 !.env.example
 
-# Provider API keys (configured via Admin UI or copied from providers.json.example)
+# Provider API keys + OAuth tokens (single auth store)
 providers.json
+auth-store.json
+data/auth-store.json
 
 # Runtime data
 data/

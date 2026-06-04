@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "updatedAt": "2026-01-01T00:00:00.000Z",
+  "activeProvider": null,
+  "providers": {
+    "openai": {
+      "baseUrl": "https://api.openai.com/v1",
+      "keys": [],
+      "enabled": false,
+      "authMode": "apikey"
+    },
+    "chatgpt": {
+      "baseUrl": "https://api.openai.com/v1",
+      "keys": [],
+      "enabled": false,
+      "authMode": "apikey"
+    },
+    "gemini": {
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "keys": [],
+      "enabled": false,
+      "authMode": "apikey"
+    },
+    "antigravity": {
+      "baseUrl": "https://cloudcode-pa.googleapis.com",
+      "keys": [],
+      "enabled": false,
+      "authMode": "oauth"
+    }
+  },
+  "oauth": {
+    "connections": []
+  }
+}

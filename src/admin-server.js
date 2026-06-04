@@ -33,8 +33,13 @@ const {
 const { getMitmAlias } = require("./dbReader");
 const { getAllCredentials } = require("./credentials");
 const { init: initLogStore, getLogs, clearLogs } = require("./logStore");
-const { loadProviders, saveProviders, forwardRequest } = require("./providerRouter");
-const { checkAllProviders, clearQuotaCache } = require("./providerQuota");
+const { forwardRequest } = require("./providerRouter");
+const { loadProviders, saveProviders, exportBackup, importBackup, listOAuthConnectionsPublic, removeOAuthConnection } = require("./authStore");
+const { listProviderMeta } = require("./providerMeta");
+const { listOAuthProvidersPublic } = require("./oauth/registry");
+const { buildAuthorizeUrl, handleCallback, refreshConnection } = require("./oauth/flow");
+const { listLocalLoginProviders, importLocalOAuth } = require("./oauth/localImport");
+const { checkAllProviders, checkProviderKeyAtIndex, clearQuotaCache } = require("./providerQuota");
 
 // Initialize log store at startup
 initLogStore();
@@ -661,6 +666,147 @@ async function handleRequest(req, res) {
       return;
     }
 
+    // ── Provider meta + auth backup ───────────────────────────────
+    if (pathname === "/api/admin/providers/meta" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ providers: listProviderMeta(), oauth: listOAuthProvidersPublic() }));
+      return;
+    }
+
+    if (pathname === "/api/admin/auth/backup/export" && req.method === "GET") {
+      const backup = exportBackup();
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      res.writeHead(200, {
+        "Content-Type": "application/json",
+        "Content-Disposition": `attachment; filename="xmitm-auth-backup-${stamp}.json"`,
+      });
+      res.end(JSON.stringify(backup, null, 2));
+      return;
+    }
+
+    if (pathname === "/api/admin/auth/backup/import" && req.method === "POST") {
+      const bodyBuffer = await collectBodyRaw(req);
+      try {
+        const incoming = JSON.parse(bodyBuffer.toString());
+        const merge = url.searchParams.get("merge") === "1";
+        const store = importBackup(incoming, { merge });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, updatedAt: store.updatedAt, merge }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
+    if (pathname === "/api/admin/oauth/connections" && req.method === "GET") {
+      const provider = url.searchParams.get("provider") || null;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ connections: listOAuthConnectionsPublic(provider) }));
+      return;
+    }
+
+    if (pathname === "/api/admin/oauth/import-local" && req.method === "POST") {
+      const provider = url.searchParams.get("provider");
+      if (!provider) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: "Missing provider" }));
+        return;
+      }
+      try {
+        const result = importLocalOAuth(provider);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, ...result }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
+    if (pathname === "/api/admin/oauth/cursor/import-local" && req.method === "POST") {
+      try {
+        const result = importLocalOAuth("cursor");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          success: true,
+          providerId: "cursor",
+          connectionId: result.id,
+          label: result.label,
+          email: result.email,
+        }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
+    if (pathname === "/api/admin/oauth/chatgpt/import-local" && req.method === "POST") {
+      try {
+        const result = importLocalOAuth("chatgpt");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, ...result }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
+    if (pathname === "/api/admin/oauth/authorize" && req.method === "GET") {
+      const provider = url.searchParams.get("provider");
+      if (!provider) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: "Missing provider" }));
+        return;
+      }
+      try {
+        const { url: authUrl } = buildAuthorizeUrl(provider, req);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, url: authUrl }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
+    if (pathname === "/api/admin/oauth/callback" && req.method === "GET") {
+      try {
+        const query = Object.fromEntries(url.searchParams.entries());
+        const result = await handleCallback(query, req);
+        res.writeHead(302, { Location: `/?oauth=ok&provider=${encodeURIComponent(result.providerId)}&tab=providers` });
+        res.end();
+      } catch (e) {
+        res.writeHead(302, { Location: `/?oauth=error&msg=${encodeURIComponent(e.message)}&tab=providers` });
+        res.end();
+      }
+      return;
+    }
+
+    if (pathname.startsWith("/api/admin/oauth/connections/") && req.method === "DELETE") {
+      const connectionId = pathname.split("/").pop();
+      const ok = removeOAuthConnection(connectionId);
+      res.writeHead(ok ? 200 : 404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: ok }));
+      return;
+    }
+
+    if (pathname.startsWith("/api/admin/oauth/connections/") && pathname.endsWith("/refresh") && req.method === "POST") {
+      const parts = pathname.split("/");
+      const connectionId = parts[parts.length - 2];
+      try {
+        await refreshConnection(connectionId);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
     // ── Providers API ─────────────────────────────────────────────
     if (pathname === "/api/admin/providers" && req.method === "GET") {
       const data = loadProviders();
@@ -672,6 +818,22 @@ async function handleRequest(req, res) {
     if (pathname === "/api/admin/providers/quota" && req.method === "GET") {
       const data = loadProviders();
       const refresh = url.searchParams.get("refresh") === "1";
+      const singleProvider = url.searchParams.get("provider");
+      const keyIndexRaw = url.searchParams.get("index");
+      if (refresh && singleProvider && keyIndexRaw != null) {
+        const keyIndex = parseInt(keyIndexRaw, 10);
+        if (!Number.isNaN(keyIndex)) {
+          const keyStat = await checkProviderKeyAtIndex(data, singleProvider, keyIndex);
+          if (!keyStat) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ success: false, error: "Key not found" }));
+            return;
+          }
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, provider: singleProvider, key: keyStat }));
+          return;
+        }
+      }
       if (refresh) clearQuotaCache();
       const quota = await checkAllProviders(data);
       res.writeHead(200, { "Content-Type": "application/json" });
@@ -716,7 +878,7 @@ async function handleRequest(req, res) {
     // Receives requests from MITM, forwards to the active provider.
     if (pathname.startsWith("/v1")) {
       const bodyBuffer = await collectBodyRaw(req);
-      forwardRequest(req, res, bodyBuffer);
+      await forwardRequest(req, res, bodyBuffer);
       return;
     }
 
