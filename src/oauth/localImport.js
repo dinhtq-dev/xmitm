@@ -3,10 +3,12 @@
  */
 const { importCursorFromLocal } = require("./cursorLocal");
 const { importChatGPTFromLocal } = require("./chatgptLocal");
+const { importOpenCodeFromLocal } = require("./opencodeLocal");
 
 const LOCAL_IMPORTERS = {
   cursor: importCursorFromLocal,
   chatgpt: importChatGPTFromLocal,
+  opencode: importOpenCodeFromLocal,
 };
 
 function importLocalOAuth(providerId) {

@@ -8,6 +8,7 @@ const CACHE_FILE = path.join(__dirname, "..", "aliases.json");
 // Ensure default aliases.json exists
 if (!fs.existsSync(CACHE_FILE)) {
   const defaultAliases = {
+    cli: {},
     antigravity: {
       "gemini-default": "gemini-3-flash"
     },

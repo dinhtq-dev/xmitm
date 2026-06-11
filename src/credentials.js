@@ -6,6 +6,7 @@
  *   - copilot:      GitHub Copilot token stored inside Cursor's state.vscdb
  *   - kiro:         ~/.kiro (if present)
  *   - antigravity:  ~/.gemini/oauth_creds.json
+ *   - opencode:     opencode CLI + ~/.local/share/opencode/auth.json (optional)
  */
 
 const fs = require("fs");
@@ -211,6 +212,51 @@ function getChatGPTCredentials() {
   };
 }
 
+function resolveOpencodeBinaryPath() {
+  if (process.env.OPENCODE_BIN && fs.existsSync(process.env.OPENCODE_BIN)) {
+    return process.env.OPENCODE_BIN;
+  }
+  try {
+    return execSync("command -v opencode", { encoding: "utf8" }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function getOpenCodeCredentials() {
+  const authPath = path.join(HOME, ".local", "share", "opencode", "auth.json");
+  const authData = readJsonFile(authPath);
+  const envKey = process.env.OPENCODE_API_KEY || null;
+  const fileKey = authData?.key || authData?.apiKey || authData?.token || null;
+  const binary = resolveOpencodeBinaryPath();
+  const projectDir = process.env.OPENCODE_PROJECT_DIR || process.cwd();
+  const port = Number(process.env.OPENCODE_SERVE_PORT || 4096);
+
+  if (!binary) {
+    return {
+      provider: "opencode",
+      error: "Khong tim thay opencode CLI trong PATH",
+      paths: { auth: authPath },
+    };
+  }
+
+  return {
+    provider: "opencode",
+    label: "OpenCode Session",
+    accessToken: envKey || fileKey || "local-session",
+    refreshToken: null,
+    extra: {
+      binary,
+      projectDir,
+      baseUrl: `http://127.0.0.1:${port}`,
+      hasApiKey: Boolean(envKey || fileKey),
+    },
+    paths: {
+      auth: fs.existsSync(authPath) ? authPath : null,
+    },
+  };
+}
+
 function getCopilotCredentials() {
   // Copilot stores its data inside the host IDE's globalStorage (e.g. Cursor or VS Code).
   // We check Cursor's state.vscdb first, then VS Code.
@@ -359,6 +405,7 @@ function getAntigravityCredentials() {
 const PROVIDERS = {
   cursor: getCursorCredentials,
   chatgpt: getChatGPTCredentials,
+  opencode: getOpenCodeCredentials,
   copilot: getCopilotCredentials,
   kiro: getKiroCredentials,
   antigravity: getAntigravityCredentials,

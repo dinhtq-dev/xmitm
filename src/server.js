@@ -196,21 +196,32 @@ async function handleRequest(req, res) {
 
     const tool = getToolForHost(req.headers.host);
 
-    // ── Response body capture (universal) ────────────────────────
+    // ── Response body capture (zero-latency, fire-and-forget) ───
+    // Intercepts only to buffer data for logging — response is NEVER blocked.
     const MAX_BODY_CAPTURE = 5000;
+    const MAX_CHUNKS = 12;
     const responseBodyBuffers = [];
     let responseStatus = null;
     let responseContentEncoding = null;
 
+    // Async decompress helpers (non-blocking)
+    const gunzipAsync  = promisify(zlib.gunzip);
+    const brotliAsync  = promisify(zlib.brotliDecompress);
+    const inflateAsync = promisify(zlib.inflate);
+
     const _origWriteHead = res.writeHead.bind(res);
     res.writeHead = (statusCode, ...args) => {
       responseStatus = statusCode;
-      // Extract content-encoding from writeHead headers
-      // writeHead signatures: (statusCode, headers) or (statusCode, statusMessage, headers)
+      // Normalize header keys to lowercase for reliable content-encoding detection
       for (const arg of args) {
         if (arg && typeof arg === 'object' && !Array.isArray(arg)) {
-          const enc = arg['content-encoding'] || arg['Content-Encoding'] || arg['content-Encoding'];
-          if (enc) { responseContentEncoding = enc; break; }
+          const normalized = Object.fromEntries(
+            Object.entries(arg).map(([k, v]) => [k.toLowerCase(), v])
+          );
+          if (normalized['content-encoding']) {
+            responseContentEncoding = normalized['content-encoding'];
+            break;
+          }
         }
       }
       return _origWriteHead(statusCode, ...args);
@@ -218,10 +229,13 @@ async function handleRequest(req, res) {
 
     const _origWrite = res.write.bind(res);
     res.write = (chunk, ...args) => {
-      if (chunk != null && responseBodyBuffers.length < 10) {
+      // ① Fire immediately — no blocking
+      const result = _origWrite(chunk, ...args);
+      // ② Passively buffer for log (capped)
+      if (chunk != null && responseBodyBuffers.length < MAX_CHUNKS) {
         responseBodyBuffers.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       }
-      return _origWrite(chunk, ...args);
+      return result;
     };
 
     // ── Create mutable entry ─────────────────────────────────
@@ -239,50 +253,63 @@ async function handleRequest(req, res) {
       duration: Date.now() - startTime,
     };
 
-    // Wrap res.end to capture response + log
     const _origEnd = res.end.bind(res);
     res.end = (chunk, ...args) => {
-      if (chunk != null) {
-        responseBodyBuffers.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-      }
-      // Convert captured response to readable text (decompress if needed)
-      let bodyText = '';
-      try {
-        const fullBuf = Buffer.concat(responseBodyBuffers);
-        if (responseContentEncoding && responseContentEncoding.includes('br')) {
-          bodyText = zlib.brotliDecompressSync(fullBuf).toString('utf8');
-        } else if (responseContentEncoding && responseContentEncoding.includes('gzip')) {
-          bodyText = zlib.gunzipSync(fullBuf).toString('utf8');
-        } else if (responseContentEncoding && responseContentEncoding.includes('deflate')) {
-          bodyText = zlib.inflateSync(fullBuf).toString('utf8');
-        } else if (fullBuf.length > 2 && fullBuf[0] === 0x1f && fullBuf[1] === 0x8b) {
-          // Gzip magic bytes fallback
-          bodyText = zlib.gunzipSync(fullBuf).toString('utf8');
-        } else {
-          bodyText = fullBuf.toString('utf8');
-        }
-      } catch (e) {
-        // Decompression failed — try all methods as fallback
+      // ① Fire response IMMEDIATELY — client gets data at full speed
+      const result = _origEnd(chunk, ...args);
+
+      // ② Schedule log processing AFTER response is sent (next event loop tick)
+      const endChunk = chunk != null ? (Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)) : null;
+      const capturedBuffers = endChunk ? [...responseBodyBuffers, endChunk] : [...responseBodyBuffers];
+      const capturedEncoding = responseContentEncoding;
+      const capturedStatus = responseStatus;
+      const capturedStart = startTime;
+
+      setImmediate(async () => {
+        let bodyText = '';
         try {
-          const raw = Buffer.concat(responseBodyBuffers);
-          // Try brotli fallback
-          try { bodyText = zlib.brotliDecompressSync(raw).toString('utf8'); } catch {
-            // Try gzip fallback
-            try { bodyText = zlib.gunzipSync(raw).toString('utf8'); } catch {
-              bodyText = raw.toString('utf8');
+          if (capturedBuffers.length === 0) {
+            bodyText = '';
+          } else {
+            const fullBuf = Buffer.concat(capturedBuffers);
+            const enc = (capturedEncoding || '').toLowerCase();
+            try {
+              if (enc.includes('br')) {
+                bodyText = (await brotliAsync(fullBuf)).toString('utf8');
+              } else if (enc.includes('gzip')) {
+                bodyText = (await gunzipAsync(fullBuf)).toString('utf8');
+              } else if (enc.includes('deflate')) {
+                bodyText = (await inflateAsync(fullBuf)).toString('utf8');
+              } else if (fullBuf.length > 2 && fullBuf[0] === 0x1f && fullBuf[1] === 0x8b) {
+                // Gzip magic bytes fallback (no content-encoding header)
+                bodyText = (await gunzipAsync(fullBuf)).toString('utf8');
+              } else {
+                bodyText = fullBuf.toString('utf8');
+              }
+            } catch {
+              // Fallback chain: brotli → gzip → deflate → raw utf8
+              try { bodyText = (await brotliAsync(fullBuf)).toString('utf8'); } catch {
+                try { bodyText = (await gunzipAsync(fullBuf)).toString('utf8'); } catch {
+                  try { bodyText = (await inflateAsync(fullBuf)).toString('utf8'); } catch {
+                    bodyText = fullBuf.toString('utf8');
+                  }
+                }
+              }
+              // If still garbled, label clearly instead of dumping garbage
+              if (/\uFFFD/.test(bodyText) && bodyText.split('\uFFFD').length > 5) {
+                bodyText = `[undecodable — compressed or binary, ${fullBuf.length} bytes]`;
+              }
             }
           }
-          // If utf8 output has too many replacement characters, show as base64
-          if (/\uFFFD/.test(bodyText) && bodyText.length > 10) {
-            bodyText = '[base64] ' + raw.toString('base64').substring(0, MAX_BODY_CAPTURE - 10);
-          }
-        } catch {}
-      }
-      entry.responseBody = bodyText.substring(0, MAX_BODY_CAPTURE);
-      entry.responseStatus = responseStatus;
-      entry.duration = Date.now() - startTime;
-      try { addLog({ ...entry }); } catch {}
-      return _origEnd(...args);
+        } catch { /* ignore log errors */ }
+
+        entry.responseBody = bodyText.substring(0, MAX_BODY_CAPTURE);
+        entry.responseStatus = capturedStatus;
+        entry.duration = Date.now() - capturedStart;
+        try { addLog({ ...entry }); } catch {}
+      });
+
+      return result;
     };
 
     // ── Tool-specific handling ─────────────────────────────────

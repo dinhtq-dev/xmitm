@@ -1,4 +1,7 @@
 {
+  "cli": {
+    "gpt-import-test": "claude-3-5-sonnet"
+  },
   "antigravity": {
     "gemini-default": "antigravity",
     "gemini-pro-agent": "antigravity",
@@ -14,7 +17,7 @@
   },
   "copilot": {
     "gpt-4o": "antigravity",
-    "claude-3.5-sonnet": "antigravity"
+    "claude-3-5-sonnet": "antigravity"
   },
   "kiro": {
     "nova-pro": "antigravity",

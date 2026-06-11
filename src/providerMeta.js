@@ -82,6 +82,12 @@ const PROVIDER_META = {
     authModes: ["oauth"],
     oauthDriver: "cursor",
   },
+  opencode: {
+    label: "OpenCode Session", icon: "🦊", desc: "OpenCode terminal session (opencode serve)",
+    defaultBaseUrl: "http://127.0.0.1:4096",
+    authModes: ["oauth"],
+    oauthDriver: "local",
+  },
 };
 
 function listProviderMeta() {

@@ -50,6 +50,9 @@ function defaultStore() {
     activeProvider: null,
     providers: defaultProviderEntries(),
     oauth: { connections: [] },
+    clientKeys: [],
+    proxies: [],
+    dns: {},
   };
 }
 
@@ -61,6 +64,8 @@ function normalizeProviderEntry(pid, prov) {
     keys: Array.isArray(prov?.keys) ? prov.keys.filter(Boolean) : [],
     enabled: prov?.enabled === true,
     authMode: authModes.includes(prov?.authMode) ? prov.authMode : authModes[0],
+    responseFormat: prov?.responseFormat || "origin",
+    proxyId: prov?.proxyId || null,
   };
 }
 
@@ -74,6 +79,9 @@ function normalizeStore(raw) {
     oauth: {
       connections: Array.isArray(raw?.oauth?.connections) ? raw.oauth.connections : [],
     },
+    clientKeys: Array.isArray(raw?.clientKeys) ? raw.clientKeys : [],
+    proxies: Array.isArray(raw?.proxies) ? raw.proxies : [],
+    dns: raw?.dns && typeof raw.dns === "object" ? { ...raw.dns } : {},
   };
 
   if (raw?.providers && typeof raw.providers === "object") {
@@ -129,11 +137,16 @@ function migrateLegacyProviders() {
   }
 }
 
+// ── In-memory cache — invalidated on every write ────────────────
+let _storeCache = null;
+
 function loadAuthStore() {
+  if (_storeCache) return _storeCache;
   const storePath = getAuthStorePath();
   if (fs.existsSync(storePath)) {
     try {
-      return normalizeStore(JSON.parse(fs.readFileSync(storePath, "utf8")));
+      _storeCache = normalizeStore(JSON.parse(fs.readFileSync(storePath, "utf8")));
+      return _storeCache;
     } catch {
       return defaultStore();
     }
@@ -149,6 +162,7 @@ function loadAuthStore() {
 }
 
 function saveAuthStore(store) {
+  _storeCache = null; // invalidate cache on every write
   const storePath = getAuthStorePath();
   const dir = path.dirname(storePath);
   try {
@@ -161,6 +175,7 @@ function saveAuthStore(store) {
   } catch (e) {
     throw new Error(`Khong ghi duoc auth store (${storePath}): ${e.message}`);
   }
+  _storeCache = normalized; // re-populate cache with freshly written value
   return normalized;
 }
 
@@ -214,6 +229,18 @@ function importBackup(payload, { merge = false } = {}) {
         ),
       ],
     },
+    clientKeys: [
+      ...current.clientKeys,
+      ...incoming.clientKeys.filter(
+        (c) => !current.clientKeys.some((x) => x.id === c.id)
+      ),
+    ],
+    proxies: [
+      ...current.proxies,
+      ...incoming.proxies.filter(
+        (c) => !current.proxies.some((x) => x.id === c.id)
+      ),
+    ],
   });
   return saveAuthStore(merged);
 }
@@ -284,6 +311,83 @@ function listOAuthConnectionsPublic(providerId) {
   return listOAuthConnections(providerId).map(sanitizeConnectionPublic);
 }
 
+function getClientKeys() {
+  const store = loadAuthStore();
+  return store.clientKeys || [];
+}
+
+function addClientKey(label) {
+  const store = loadAuthStore();
+  const rawKey = "sk-xmitm-" + crypto.randomBytes(24).toString("hex");
+  const newKey = {
+    id: crypto.randomUUID(),
+    key: rawKey,
+    label: label || "Unnamed Key",
+    createdAt: nowIso(),
+  };
+  store.clientKeys = store.clientKeys || [];
+  store.clientKeys.push(newKey);
+  saveAuthStore(store);
+  return newKey;
+}
+
+function removeClientKey(id) {
+  const store = loadAuthStore();
+  const before = store.clientKeys.length;
+  store.clientKeys = (store.clientKeys || []).filter((k) => k.id !== id);
+  if (store.clientKeys.length === before) return false;
+  saveAuthStore(store);
+  return true;
+}
+
+function validateClientKey(token) {
+  const store = loadAuthStore();
+  const keys = store.clientKeys || [];
+  // If no client keys are set up, authorization is bypassed (backward-compatible)
+  if (keys.length === 0) return true;
+  if (!token) return false;
+  return keys.some((k) => k.key === token);
+}
+
+function getProxies() {
+  const store = loadAuthStore();
+  return store.proxies || [];
+}
+
+function addProxy(label, url, type) {
+  const store = loadAuthStore();
+  const newProxy = {
+    id: crypto.randomUUID(),
+    label: label || "Unnamed Proxy",
+    url: url,
+    type: type || "http",
+    createdAt: nowIso(),
+  };
+  store.proxies = store.proxies || [];
+  store.proxies.push(newProxy);
+  saveAuthStore(store);
+  return newProxy;
+}
+
+function removeProxy(id) {
+  const store = loadAuthStore();
+  const before = store.proxies.length;
+  store.proxies = (store.proxies || []).filter((p) => p.id !== id);
+  if (store.proxies.length === before) return false;
+  
+  // Clean up proxy reference from any provider
+  if (store.providers) {
+    for (const prov of Object.values(store.providers)) {
+      if (prov.proxyId === id) {
+        prov.proxyId = null;
+      }
+    }
+  }
+  
+  saveAuthStore(store);
+  return true;
+}
+
 module.exports = {
   getAuthStorePath,
   STORE_VERSION,
@@ -299,4 +403,12 @@ module.exports = {
   upsertOAuthConnection,
   removeOAuthConnection,
   rotateOAuthConnection,
+  getClientKeys,
+  addClientKey,
+  removeClientKey,
+  validateClientKey,
+  getProxies,
+  addProxy,
+  removeProxy,
 };
+

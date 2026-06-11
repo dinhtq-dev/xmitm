@@ -34,7 +34,7 @@ const { getMitmAlias } = require("./dbReader");
 const { getAllCredentials } = require("./credentials");
 const { init: initLogStore, getLogs, clearLogs } = require("./logStore");
 const { forwardRequest } = require("./providerRouter");
-const { loadAuthStore, saveAuthStore, loadProviders, saveProviders, exportBackup, importBackup, listOAuthConnectionsPublic, removeOAuthConnection, getClientKeys, addClientKey, removeClientKey, getProxies, addProxy, removeProxy } = require("./authStore");
+const { loadProviders, saveProviders, exportBackup, importBackup, listOAuthConnectionsPublic, removeOAuthConnection } = require("./authStore");
 const { listProviderMeta } = require("./providerMeta");
 const { listOAuthProvidersPublic } = require("./oauth/registry");
 const { buildAuthorizeUrl, handleCallback, refreshConnection } = require("./oauth/flow");
@@ -44,34 +44,6 @@ const opencodeSession = require("./opencode/sessionProvider");
 
 // Initialize log store at startup
 initLogStore();
-
-// Sync stored DNS config with actual hosts file on startup
-function syncDNSConfigWithHosts() {
-  try {
-    const store = loadAuthStore();
-    const actualHosts = checkAllDNSStatus();
-    let updated = false;
-
-    if (!store.dns) {
-      store.dns = {};
-    }
-
-    for (const [tool, isPresent] of Object.entries(actualHosts)) {
-      if (isPresent && !store.dns[tool]) {
-        store.dns[tool] = true;
-        updated = true;
-        log(`🔄 [DNS Startup Sync] Detected '${tool}' DNS entries in hosts file — updating config to ON`);
-      }
-    }
-
-    if (updated) {
-      saveAuthStore(store);
-    }
-  } catch (error) {
-    err(`[DNS Startup Sync] Failed: ${error.message}`);
-  }
-}
-syncDNSConfigWithHosts();
 
 // ── Constants ───────────────────────────────────────────────────
 const ADMIN_PORT = 3000;
@@ -204,7 +176,14 @@ async function startMitmServer(sudoPassword) {
     }
   }
 
-  // Step 2: Build env for MITM child
+  // Step 2: Add DNS entries for all tools
+  log("🌐 Configuring DNS entries...");
+  for (const tool of Object.keys(TOOL_HOSTS)) {
+    await addDNSEntry(tool, password);
+  }
+  log("🌐 All DNS entries configured");
+
+  // Step 3: Build env for MITM child
   const envVars = readEnv();
   const mitmEnv = {
     ...process.env,
@@ -213,7 +192,7 @@ async function startMitmServer(sudoPassword) {
   if (envVars.MITM_ROUTER_BASE) mitmEnv.MITM_ROUTER_BASE = envVars.MITM_ROUTER_BASE;
   if (envVars.ROUTER_API_KEY) mitmEnv.ROUTER_API_KEY = envVars.ROUTER_API_KEY;
 
-  // Step 2: Spawn MITM server
+  // Step 3: Spawn MITM server
   const serverPath = path.join(__dirname, "server.js");
   log(`🚀 Spawning MITM server: ${serverPath}`);
 
@@ -291,7 +270,7 @@ async function startMitmServer(sudoPassword) {
     mitmRealPid = null;
   });
 
-  // Step 3: Wait for health
+  // Step 4: Wait for health
   log("⏳ Waiting for MITM server to become healthy...");
   let health;
   try {
@@ -407,6 +386,15 @@ async function stopMitmServer(sudoPassword) {
     }
   }
 
+  // ── Step 5: Remove all DNS entries ──
+  log("🌐 Removing all DNS entries...");
+  try {
+    await removeAllDNSEntries(password);
+    log("🌐 All DNS entries removed");
+  } catch (e) {
+    err(`Failed to remove DNS entries: ${e.message}`);
+  }
+
   mitmStopping = false;
   return { running: false, pid: null };
 }
@@ -455,7 +443,6 @@ async function handleRequest(req, res) {
       const mitm = await getMitmStatus();
       const dns = checkAllDNSStatus();
       const mappings = {
-        cli: getMitmAlias("cli") || {},
         antigravity: getMitmAlias("antigravity") || {},
         copilot: getMitmAlias("copilot") || {},
         kiro: getMitmAlias("kiro") || {},
@@ -580,13 +567,6 @@ async function handleRequest(req, res) {
         if (enable) await addDNSEntry(tool, password);
         else await removeDNSEntry(tool, password);
         if (sudoPassword) cachedSudoPassword = sudoPassword;
-
-        // Persist DNS state in authStore
-        const store = loadAuthStore();
-        if (!store.dns) store.dns = {};
-        store.dns[tool] = !!enable;
-        saveAuthStore(store);
-
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true }));
       } catch (e) {
@@ -713,157 +693,6 @@ async function handleRequest(req, res) {
         const store = importBackup(incoming, { merge });
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, updatedAt: store.updatedAt, merge }));
-      } catch (e) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-      return;
-    }
-
-    // ── Full Config Export (all-in-one) ───────────────────────────
-    if (pathname === "/api/admin/config/export" && req.method === "GET") {
-      try {
-        const authStore = exportBackup();
-        const aliasFile = path.join(__dirname, "..", "aliases.json");
-        const aliases = fs.existsSync(aliasFile)
-          ? JSON.parse(fs.readFileSync(aliasFile, "utf8"))
-          : {};
-        const envVars = readEnv();
-        const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-        const fullConfig = {
-          _xmitm: true,
-          version: 1,
-          exportedAt: new Date().toISOString(),
-          env: {
-            MITM_ROUTER_BASE: envVars.MITM_ROUTER_BASE || "",
-            ROUTER_API_KEY: envVars.ROUTER_API_KEY || "",
-          },
-          authStore,
-          aliases,
-        };
-        res.writeHead(200, {
-          "Content-Type": "application/json",
-          "Content-Disposition": `attachment; filename="xmitm-config-${stamp}.json"`,
-        });
-        res.end(JSON.stringify(fullConfig, null, 2));
-      } catch (e) {
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-      return;
-    }
-
-    // ── Full Config Import (all-in-one) ───────────────────────────
-    if (pathname === "/api/admin/config/import" && req.method === "POST") {
-      const bodyBuffer = await collectBodyRaw(req);
-      try {
-        const incoming = JSON.parse(bodyBuffer.toString());
-        if (!incoming._xmitm) throw new Error("Invalid config file — missing _xmitm marker");
-
-        const results = [];
-
-        // 1. Restore auth store (providers + OAuth)
-        if (incoming.authStore) {
-          importBackup(incoming.authStore, { merge: false });
-          results.push("auth-store restored");
-        }
-
-        // 2. Restore aliases (model routing)
-        if (incoming.aliases) {
-          const aliasFile = path.join(__dirname, "..", "aliases.json");
-          fs.writeFileSync(aliasFile, JSON.stringify(incoming.aliases, null, 2), "utf8");
-          results.push("aliases restored");
-        }
-
-        // 3. Restore .env
-        if (incoming.env) {
-          const { MITM_ROUTER_BASE, ROUTER_API_KEY } = incoming.env;
-          const envPath = path.join(__dirname, "..", ".env");
-          const content = [
-            "# 9Router MITM Server configuration",
-            "",
-            `MITM_ROUTER_BASE=${MITM_ROUTER_BASE || ""}`,
-            "",
-            `ROUTER_API_KEY=${ROUTER_API_KEY || ""}`,
-            "",
-          ].join("\n");
-          fs.writeFileSync(envPath, content, "utf-8");
-          if (MITM_ROUTER_BASE) process.env.MITM_ROUTER_BASE = MITM_ROUTER_BASE;
-          if (ROUTER_API_KEY) process.env.ROUTER_API_KEY = ROUTER_API_KEY;
-          results.push("env restored");
-        }
-
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, restored: results }));
-      } catch (e) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-      return;
-    }
-
-    // ── Client API Keys (Create/List/Delete API Keys for Client) ────────────────────
-    if (pathname === "/api/admin/client-keys" && req.method === "GET") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true, keys: getClientKeys() }));
-      return;
-    }
-
-    if (pathname === "/api/admin/client-keys" && req.method === "POST") {
-      try {
-        const bodyBuffer = await collectBodyRaw(req);
-        const { label } = JSON.parse(bodyBuffer.toString() || "{}");
-        const newKey = addClientKey(label);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, key: newKey }));
-      } catch (e) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-      return;
-    }
-
-    if (pathname === "/api/admin/client-keys" && req.method === "DELETE") {
-      try {
-        const id = url.searchParams.get("id");
-        if (!id) throw new Error("Missing key ID");
-        const success = removeClientKey(id);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success }));
-      } catch (e) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-      return;
-    }
-
-    if (pathname === "/api/admin/proxies" && req.method === "GET") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ proxies: getProxies() }));
-      return;
-    }
-
-    if (pathname === "/api/admin/proxies" && req.method === "POST") {
-      try {
-        const bodyBuffer = await collectBodyRaw(req);
-        const { label, url, type } = JSON.parse(bodyBuffer.toString() || "{}");
-        const newProxy = addProxy(label, url, type);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, proxy: newProxy }));
-      } catch (e) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-      return;
-    }
-
-    if (pathname === "/api/admin/proxies" && req.method === "DELETE") {
-      try {
-        const id = url.searchParams.get("id");
-        if (!id) throw new Error("Missing proxy ID");
-        const success = removeProxy(id);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success }));
       } catch (e) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: false, error: e.message }));
@@ -1103,12 +932,7 @@ async function handleRequest(req, res) {
     // ── Provider Router /v1/* ─────────────────────────────────────
     // This is the main router endpoint — MITM_ROUTER_BASE should point here.
     // Receives requests from MITM, forwards to the active provider.
-    if (
-      pathname.startsWith("/v1") ||
-      pathname === "/responses" ||
-      pathname === "/chat/completions" ||
-      pathname === "/messages"
-    ) {
+    if (pathname.startsWith("/v1")) {
       const bodyBuffer = await collectBodyRaw(req);
       await forwardRequest(req, res, bodyBuffer);
       return;

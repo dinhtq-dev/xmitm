@@ -151,69 +151,40 @@
   </div>
 
   <div>
-  <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
-    
-    <!-- LEFT: System Health -->
-    <div class="lg:col-span-1 space-y-6">
-      
-      <!-- System status info card -->
-      <div class="glass-card rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-        <div class="absolute -right-4 -top-4 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl"></div>
-        <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-5 flex items-center space-x-2 heading">
-          <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-          <span>System Details</span>
-        </h2>
-        <div class="space-y-4">
-          <div class="flex justify-between items-center py-2.5 border-b border-white/[0.03]">
-            <span class="text-sm text-slate-400">PID</span>
-            <span class="text-sm font-semibold mono text-orange-300" id="sys-pid">-</span>
-          </div>
-          <div class="flex justify-between items-center py-2.5 border-b border-white/[0.03]">
-            <span class="text-sm text-slate-400">HTTPS Proxy Port</span>
-            <span class="text-sm font-semibold text-slate-200">443 <span class="text-2xs text-slate-500 font-normal ml-1">(SSL)</span></span>
-          </div>
-          <div class="flex justify-between items-center py-2.5 border-b border-white/[0.03]">
-            <span class="text-sm text-slate-400">HTTP Shim Port</span>
-            <span class="text-sm font-semibold text-slate-200">20129</span>
-          </div>
-        </div>
+  <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-6">
 
-        <!-- Router Config -->
-        <div class="mt-5 pt-4 border-t border-white/[0.03]">
-          <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 heading flex items-center space-x-2">
-            <svg class="w-3.5 h-3.5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            <span>API Endpoint</span>
-          </h3>
-          <div class="space-y-3">
-            <div>
-              <label class="block text-2xs text-slate-500 mb-1.5 font-mono">MITM_ROUTER_BASE</label>
-              <input id="config-router-base" type="text" placeholder="https://ai.proxy.vn/v1"
-                     class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none" />
-            </div>
-            <div>
-              <label class="block text-2xs text-slate-500 mb-1.5 font-mono">ROUTER_API_KEY</label>
-              <div class="relative">
-                <input id="config-api-key" type="password" placeholder="sk-..."
-                       class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 pr-9 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none" />
-                <button onclick="toggleApiKeyVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition duration-150 cursor-pointer focus:outline-none" type="button">
-                  <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                </button>
-              </div>
-            </div>
-            <button id="btn-save-config" onclick="saveConfig()" class="w-full mt-1 px-4 py-2.5 bg-gradient-to-r from-orange-500/80 to-amber-600/80 hover:from-orange-500 hover:to-amber-600 active:scale-[0.98] text-white font-bold text-xs rounded-xl transition duration-200 disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-400">
-              Save Configuration
-            </button>
-          </div>
+    <!-- System Details Bar -->
+    <div class="glass-card rounded-2xl px-6 py-4 shadow-xl relative overflow-hidden">
+      <div class="absolute -right-4 -top-4 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl"></div>
+      <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+        <div class="flex items-center space-x-2">
+          <svg class="w-4 h-4 text-orange-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+          <span class="text-xs font-bold uppercase tracking-widest text-slate-400 heading">System Details</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xs text-slate-500">PID</span>
+          <span class="text-xs font-semibold mono text-orange-300" id="sys-pid">-</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xs text-slate-500">HTTPS Proxy</span>
+          <span class="text-xs font-semibold text-slate-200">:443 <span class="text-[10px] text-slate-500">(SSL)</span></span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xs text-slate-500">HTTP Shim</span>
+          <span class="text-xs font-semibold text-slate-200">:20129</span>
         </div>
       </div>
-
     </div>
 
-    <!-- RIGHT: Tabs: Console | Model Routing | DNS Redirection -->
-    <div class="lg:col-span-3 space-y-6">
+    <!-- Full-width Tabs area -->
+    <div class="space-y-6">
       <!-- Tab Buttons -->
       <div class="flex items-center space-x-1 border-b border-white/[0.03] mb-0">
-        <button id="tab-console" onclick="switchTab('console')" class="tab-btn active px-5 py-3 text-xs font-bold text-slate-200 border-b-2 transition duration-150 cursor-pointer focus:outline-none" style="border-bottom-color: #f97316;">
+        <button id="tab-providers" onclick="switchTab('providers')" class="tab-btn active px-5 py-3 text-xs font-bold text-slate-200 border-b-2 transition duration-150 cursor-pointer focus:outline-none" style="border-bottom-color: #f97316;">
+          <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+          API Providers
+        </button>
+        <button id="tab-console" onclick="switchTab('console')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
           <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
           Console
         </button>
@@ -225,14 +196,95 @@
           <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           DNS Redirection
         </button>
-        <button id="tab-providers" onclick="switchTab('providers')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
-          <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-          API Providers
+        <button id="tab-proxy" onclick="switchTab('proxy')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
+          <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+          Proxy
+        </button>
+        <button id="tab-settings" onclick="switchTab('settings')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
+          <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m-5 8a2 2 0 01-2-2V9a2 2 0 012-2h3m-1 1v-5a1 1 0 10-2 0v5H5V7a3 3 0 00-3 3v8a3 3 0 003 3h10a3 3 0 003-3v-3h-5z"></path></svg>
+          Client Keys
         </button>
       </div>
 
+      <!-- Tab Content: API Providers -->
+      <div id="panel-providers" class="tab-panel space-y-6">
+        
+        <!-- Card 1: API Endpoint Management (Outbound Fallback Routing) -->
+        <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
+          <div class="absolute -right-12 -top-12 w-48 h-48 bg-orange-500/5 rounded-full blur-3xl"></div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-white/[0.03]">
+            <div>
+              <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
+                <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span>API Endpoint Management</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-1">Configure default API Endpoint (MITM_ROUTER_BASE) and Router API key (ROUTER_API_KEY) when providers are disabled.</p>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+            <div class="md:col-span-5">
+              <label class="block text-2xs text-slate-400 mb-1.5 font-mono">MITM_ROUTER_BASE</label>
+              <input id="config-router-base" type="text" placeholder="https://ai.proxy.vn/v1"
+                     class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none" />
+            </div>
+            <div class="md:col-span-4">
+              <label class="block text-2xs text-slate-400 mb-1.5 font-mono">ROUTER_API_KEY</label>
+              <div class="relative">
+                <input id="config-api-key" type="password" placeholder="sk-..."
+                       class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 pr-20 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none" />
+                <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center space-x-1">
+                  <button onclick="toggleApiKeyVisibility()" class="p-1 text-slate-500 hover:text-slate-300 transition duration-150 cursor-pointer focus:outline-none" type="button" title="Toggle visibility">
+                     <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                  </button>
+                  <button onclick="generateRouterApiKey()" class="px-2 py-1 bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 rounded text-[9px] font-semibold uppercase font-mono tracking-wider transition duration-150 focus:outline-none cursor-pointer" type="button" title="Generate API Key">
+                    Gen
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="md:col-span-3">
+              <button id="btn-save-config" onclick="saveConfig()" class="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500/80 to-amber-600/80 hover:from-orange-500 hover:to-amber-600 active:scale-[0.98] text-white font-bold text-xs rounded-xl transition duration-200 disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-400">
+                Save Configuration
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-5 p-4 rounded-xl bg-black/20 border border-white/[0.03]">
+            <div class="text-[10px] uppercase tracking-wider text-orange-400 font-bold mb-1">OpenAI-compatible Endpoint (Local Proxy)</div>
+            <div class="text-[11px] font-mono text-slate-400 break-all select-all">http://127.0.0.1:3000/v1</div>
+            <p class="text-[10px] text-slate-500 mt-2">Example: <span class="font-mono text-slate-400">OPENAI_BASE_URL=http://127.0.0.1:3000/v1</span> to route local SDK requests through this XMITM server.</p>
+          </div>
+        </div>
+
+        <!-- Card 2: API Providers & Keys -->
+        <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
+          <div class="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl"></div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-white/[0.03]">
+            <div>
+              <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                <span>API Providers &amp; Keys</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-1">Keys + OAuth tokens luu chung file <span class="font-mono text-slate-400">auth-store.json</span> (hoac <span class="font-mono text-slate-400">data/auth-store.json</span>)</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button type="button" onclick="exportAuthBackup()" class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.04] text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 border border-white/[0.06] cursor-pointer">Export backup</button>
+              <label class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.04] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-white/[0.06] cursor-pointer">
+                Import backup
+                <input type="file" accept="application/json,.json" class="hidden" onchange="importAuthBackupFile(event)" />
+              </label>
+            </div>
+          </div>
+
+          <div id="providers-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Dynamic provider cards -->
+          </div>
+        </div>
+      </div>
+
       <!-- Tab Content: Console -->
-      <div id="panel-console" class="tab-panel">
+      <div id="panel-console" class="tab-panel hidden">
         <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden" style="min-height: 400px;">
           <div class="absolute -right-12 -top-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
           <div class="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.03]">
@@ -276,54 +328,273 @@
       <div id="panel-dns" class="tab-panel hidden">
         <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
           <div class="absolute -right-12 -top-12 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl"></div>
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-white/[0.03]">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-white/[0.03]">
             <div>
               <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
                 <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 <span>DNS Redirection</span>
               </h2>
-              <p class="text-xs text-slate-500 mt-1">Turn switch ON to force traffic into MITM, or OFF to let requests go through normal internet.</p>
+              <p class="text-xs text-slate-500 mt-1">Toggle ON to redirect tool traffic through MITM (adds to <code class="text-slate-400">/etc/hosts</code>). Toggle OFF to restore normal routing. Independent from MITM start/stop.</p>
             </div>
           </div>
           <div class="space-y-4" id="dns-list">
             <!-- Dyn lists -->
           </div>
+          <div class="mt-5 p-3 rounded-xl bg-orange-500/[0.03] border border-orange-500/10">
+            <p class="text-[10px] text-slate-500 leading-relaxed">
+              <span class="text-orange-400 font-bold">Tip:</span> DNS entries persist independently — they stay active even when MITM is stopped. Start MITM first, then enable DNS for the tools you want to intercept.
+            </p>
+          </div>
         </div>
       </div>
 
-      <!-- Tab Content: API Providers -->
-      <div id="panel-providers" class="tab-panel hidden">
+      <!-- Tab Content: Proxy Management -->
+      <div id="panel-proxy" class="tab-panel hidden space-y-6">
         <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
-          <div class="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl"></div>
+          <div class="absolute -right-12 -top-12 w-48 h-48 bg-teal-500/5 rounded-full blur-3xl"></div>
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-white/[0.03]">
             <div>
               <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
-                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                <span>API Providers & Keys</span>
+                <svg class="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                <span>Proxy Management</span>
               </h2>
-              <p class="text-xs text-slate-500 mt-1">Keys + OAuth tokens luu chung file <span class="font-mono text-slate-400">auth-store.json</span> (hoac <span class="font-mono text-slate-400">data/auth-store.json</span>)</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 shrink-0">
-              <button type="button" onclick="exportAuthBackup()" class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.04] text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 border border-white/[0.06] cursor-pointer">Export backup</button>
-              <label class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.04] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-white/[0.06] cursor-pointer">
-                Import backup
-                <input type="file" accept="application/json,.json" class="hidden" onchange="importAuthBackupFile(event)" />
-              </label>
+              <p class="text-xs text-slate-500 mt-1">Configure HTTP/SOCKS5 proxies. Each provider can use a different proxy to route upstream requests.</p>
             </div>
           </div>
-          <div class="mb-5 p-4 rounded-xl bg-black/30 border border-indigo-500/20">
-            <div class="text-[10px] uppercase tracking-wider text-indigo-300 font-bold mb-2">OpenAI-compatible endpoint (CLI / SDK)</div>
-            <div class="text-[11px] font-mono text-slate-400 break-all">POST http://127.0.0.1:3000/v1/chat/completions</div>
-            <pre class="mt-2 text-[10px] font-mono text-slate-500 overflow-x-auto">{"model":"gpt-4o","messages":[{"role":"user","content":"..."}]}</pre>
-            <p class="text-[10px] text-slate-600 mt-2">Codex CLI: <span class="font-mono text-indigo-300">OPENAI_BASE_URL=http://127.0.0.1:3000/v1</span> — provider <span class="text-indigo-300">ChatGPT / Codex</span> hoac OpenAI.</p>
+
+          <!-- Add Proxy Form -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-6 items-end p-4 bg-black/20 rounded-xl border border-white/[0.03]">
+            <div class="md:col-span-3">
+              <label class="block text-2xs text-slate-400 mb-1.5 font-mono">Label</label>
+              <input id="proxy-form-label" type="text" placeholder="e.g. VPN US, Datacenter SG" class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-teal-500/50 transition" />
+            </div>
+            <div class="md:col-span-5">
+              <label class="block text-2xs text-slate-400 mb-1.5 font-mono">Proxy URL</label>
+              <input id="proxy-form-url" type="text" placeholder="http://user:pass@host:port  or  socks5://host:port" class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-teal-500/50 transition" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-2xs text-slate-400 mb-1.5 font-mono">Type</label>
+              <select id="proxy-form-type" class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-teal-500/50 transition">
+                <option value="http">HTTP</option>
+                <option value="https">HTTPS</option>
+                <option value="socks5">SOCKS5</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <button onclick="addProxyConfig()" class="w-full px-4 py-2 bg-gradient-to-r from-teal-500/80 to-cyan-600/80 hover:from-teal-500 hover:to-cyan-600 text-white font-bold text-xs rounded-xl transition duration-150 cursor-pointer focus:outline-none">
+                Add Proxy
+              </button>
+            </div>
           </div>
-          <div class="mb-5 p-4 rounded-xl bg-black/30 border border-orange-500/20">
-            <div class="text-[10px] uppercase tracking-wider text-orange-300 font-bold mb-2">IDE thật (Antigravity / Cursor / Copilot)</div>
-            <p class="text-[10px] text-slate-500 leading-relaxed">Tab <span class="text-orange-300 font-bold">DNS Redirection</span> → bật tool → Start MITM (sudo). IDE tự đi qua proxy; token đọc từ app local hoặc OAuth Login ở đây.</p>
-            <p class="text-[10px] text-slate-600 mt-1.5">Hai cách dùng song song: CLI qua endpoint <span class="font-mono text-slate-400">/v1</span> + IDE qua DNS MITM.</p>
+
+          <!-- Proxy List -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-white/[0.05] text-[10px] text-slate-500 uppercase font-bold tracking-wider font-mono">
+                  <th class="py-2.5">Label</th>
+                  <th class="py-2.5">Proxy URL</th>
+                  <th class="py-2.5 text-center">Type</th>
+                  <th class="py-2.5 text-center">Used by</th>
+                  <th class="py-2.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="proxy-list-body" class="divide-y divide-white/[0.02] text-xs">
+                <!-- Dynamic rows -->
+              </tbody>
+            </table>
           </div>
-          <div id="providers-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Dynamic provider cards -->
+
+          <!-- Info -->
+          <div class="mt-5 p-3 rounded-xl bg-teal-500/[0.03] border border-teal-500/10">
+            <p class="text-[10px] text-slate-500 leading-relaxed">
+              <span class="text-teal-400 font-bold">Tip:</span> Assign a proxy to a provider in the <strong class="text-slate-400">API Providers</strong> tab. Requests to that provider will be tunneled through the selected proxy. Leave unset to connect directly.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Settings -->
+      <div id="panel-settings" class="tab-panel hidden space-y-6">
+        
+        <!-- Card 2: XMITM Client API Keys -->
+        <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
+          <div class="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl"></div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-white/[0.03]">
+            <div>
+              <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m-5 8a2 2 0 01-2-2V9a2 2 0 012-2h3m-1 1v-5a1 1 0 10-2 0v5H5V7a3 3 0 00-3 3v8a3 3 0 003 3h10a3 3 0 003-3v-3h-5z"></path></svg>
+                <span>Client API Keys</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-1">Manage API Keys to authorize external scripts/SDKs accessing XMITM. If the list is empty, authentication is bypassed.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-6 items-end">
+            <div class="sm:col-span-9">
+              <label class="block text-2xs text-slate-400 mb-1.5 font-mono">Key Label / Description</label>
+              <input id="client-key-label" type="text" placeholder="e.g. VSCode, Cursor, Python CLI"
+                     class="w-full bg-black/40 border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 transition duration-150" />
+            </div>
+            <div class="sm:col-span-3">
+              <button onclick="createClientApiKey()" class="w-full h-[42px] flex items-center justify-center px-5 bg-gradient-to-r from-indigo-500/90 to-purple-600/90 hover:from-indigo-500 hover:to-purple-600 text-white font-bold text-xs rounded-xl shadow-lg transition duration-150 cursor-pointer focus:outline-none">
+                Generate Client Key
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-white/[0.05] text-[10px] text-slate-500 uppercase font-bold tracking-wider font-mono">
+                  <th class="py-2.5">Label</th>
+                  <th class="py-2.5">API Key</th>
+                  <th class="py-2.5 text-center">Created</th>
+                  <th class="py-2.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="client-keys-list-body" class="divide-y divide-white/[0.02] text-xs">
+                <!-- Dynamic rows -->
+              </tbody>
+            </table>
+          </div>
+          <!-- Usage Info Box -->
+          <div class="mt-5 rounded-xl border border-indigo-500/10 bg-indigo-500/[0.03] overflow-hidden">
+            <div class="px-4 py-3 border-b border-indigo-500/10 flex items-center space-x-2">
+              <svg class="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span class="text-[10px] text-indigo-300 uppercase font-bold tracking-wider">How to use with Postman / SDK</span>
+            </div>
+            <div class="p-4 space-y-4">
+              <!-- Endpoint URL -->
+              <div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Endpoint URL (OpenAI-compatible)</div>
+                <div class="flex items-center space-x-2">
+                  <code id="client-key-endpoint-url" class="flex-1 text-[11px] font-mono text-emerald-400 bg-black/40 px-3 py-2 rounded-lg border border-white/[0.04] select-all break-all">http://127.0.0.1:3000/v1</code>
+                  <button onclick="copyText('http://127.0.0.1:3000/v1')" class="flex-shrink-0 p-1.5 text-slate-500 hover:text-emerald-400 transition duration-150 cursor-pointer focus:outline-none" type="button" title="Copy URL">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                  </button>
+                </div>
+              </div>
+              <!-- Header -->
+              <div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">Required Header</div>
+                <div class="flex items-center space-x-2">
+                  <code class="flex-1 text-[11px] font-mono text-amber-400 bg-black/40 px-3 py-2 rounded-lg border border-white/[0.04] select-all">Authorization: Bearer &lt;your-client-api-key&gt;</code>
+                </div>
+              </div>
+              <!-- Quick guide -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- Postman -->
+                <div class="bg-black/30 rounded-lg p-3 border border-white/[0.03]">
+                  <div class="text-[10px] font-bold text-orange-400 mb-2 flex items-center space-x-1">
+                    <span>🟠</span><span>Postman</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 space-y-1 font-mono leading-relaxed">
+                    <div><span class="text-slate-500">URL:</span> <span class="text-slate-300">POST /v1/chat/completions</span></div>
+                    <div><span class="text-slate-500">Auth:</span> <span class="text-slate-300">Bearer Token → paste key</span></div>
+                  </div>
+                </div>
+                <!-- Python SDK -->
+                <div class="bg-black/30 rounded-lg p-3 border border-white/[0.03]">
+                  <div class="text-[10px] font-bold text-blue-400 mb-2 flex items-center space-x-1">
+                    <span>🐍</span><span>Python / openai SDK</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 font-mono leading-relaxed">
+                    <div class="text-slate-300">client = OpenAI(</div>
+                    <div class="pl-2 text-slate-400">base_url=<span class="text-emerald-400">"http://127.0.0.1:3000/v1"</span>,</div>
+                    <div class="pl-2 text-slate-400">api_key=<span class="text-amber-400">"sk-xmitm-..."</span></div>
+                    <div class="text-slate-300">)</div>
+                  </div>
+                </div>
+                <!-- curl -->
+                <div class="bg-black/30 rounded-lg p-3 border border-white/[0.03]">
+                  <div class="text-[10px] font-bold text-purple-400 mb-2 flex items-center space-x-1">
+                    <span>⚡</span><span>cURL</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 font-mono leading-relaxed break-all">
+                    <div>curl -X POST \</div>
+                    <div class="pl-2 text-emerald-400">http://127.0.0.1:3000/v1/chat/completions \</div>
+                    <div class="pl-2 text-amber-400">-H "Authorization: Bearer sk-xmitm-..." \</div>
+                    <div class="pl-2 text-slate-300">-d '{"model":"gpt-4o","messages":[...]}'</div>
+                  </div>
+                </div>
+              </div>
+              <p class="text-[10px] text-slate-600 italic">
+                ⚠️ Authentication is only enforced when at least 1 Client API Key exists. With no keys, all requests pass through without auth.
+              </p>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Card 3: System Backup & Restore -->
+        <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
+          <div class="absolute -right-12 -top-12 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl"></div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-white/[0.03]">
+            <div>
+              <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
+                <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span>System Configuration &amp; Backup</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-1">Export your active providers, keys, model routing rules, and router configurations, or import them back to restore setting status.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Export Section -->
+            <div class="border border-white/[0.04] rounded-xl p-6 bg-white/[0.01] flex flex-col justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-slate-200 flex items-center space-x-2 mb-2">
+                  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  <span>Export Backup</span>
+                </h3>
+                <p class="text-xs text-slate-500 leading-relaxed mb-4">
+                  Downloads a single, secure JSON configuration file containing:
+                </p>
+                <ul class="text-[11px] text-slate-400 space-y-1.5 list-disc pl-5 mb-6">
+                  <li>API Providers list and credential keys (`auth-store.json`)</li>
+                  <li>All active model routing &amp; renaming rules (`aliases.json`)</li>
+                  <li>System-level proxy &amp; endpoint parameters (`.env`)</li>
+                </ul>
+              </div>
+              <button onclick="exportFullConfig()" class="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-lg glow-orange transition duration-200 cursor-pointer flex items-center justify-center space-x-2 focus:outline-none">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                <span>Download Configuration File</span>
+              </button>
+            </div>
+
+            <!-- Import Section -->
+            <div class="border border-white/[0.04] rounded-xl p-6 bg-white/[0.01] flex flex-col justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-slate-200 flex items-center space-x-2 mb-2">
+                  <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                  <span>Import Backup</span>
+                </h3>
+                <p class="text-xs text-slate-500 leading-relaxed mb-4">
+                  Select a previously exported `xmitm-config-*.json` file to restore settings. <strong>This will replace current config and mappings.</strong>
+                </p>
+
+                <!-- Drag Drop Zone -->
+                <div id="import-dropzone" class="border-2 border-dashed border-white/[0.08] hover:border-orange-500/40 rounded-xl p-6 text-center cursor-pointer transition duration-150 bg-black/20 hover:bg-black/35 mb-4 relative" onclick="document.getElementById('import-file-input').click()">
+                  <input type="file" id="import-file-input" class="hidden" accept=".json" onchange="handleImportFileSelect(event)" />
+                  <svg class="w-8 h-8 text-slate-600 mx-auto mb-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                  <span id="dropzone-text" class="text-xs font-semibold text-slate-400 block">Click or Drag &amp; Drop JSON file here</span>
+                  <span id="selected-file-info" class="text-[10px] text-orange-400 font-mono mt-1 hidden"></span>
+                </div>
+              </div>
+
+              <div class="flex space-x-3">
+                <button id="btn-import-reset" onclick="resetImportFile()" class="hidden flex-1 py-3 bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-slate-200 font-bold text-xs rounded-xl transition duration-150 cursor-pointer focus:outline-none">
+                  Reset
+                </button>
+                <button id="btn-import-submit" onclick="submitImportConfig()" disabled class="flex-[2] py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-lg glow-orange transition duration-200 cursor-not-allowed opacity-40 flex items-center justify-center space-x-2 focus:outline-none">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>Upload &amp; Restore</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -651,7 +922,7 @@
     }
 
     async function stopMitm() {
-      if (!confirm('Are you sure you want to stop the MITM server? This will also remove all DNS entries.')) return;
+      if (!confirm('Are you sure you want to stop the MITM server?')) return;
       updateToggleButton(true, true);
       try {
         let sudoPassword = null;
@@ -883,6 +1154,62 @@
 
       const disabled = state.mitmRunning;
 
+      // CLI section rendered separately (top, distinct style)
+      const cliMappings = state.mappings['cli'] || {};
+      const cliExpanded = window.expandedToolSections['cli'];
+      const cliSection = document.createElement('div');
+      cliSection.className = 'border border-orange-500/20 rounded-xl p-5 bg-orange-500/[0.03] hover:border-orange-500/40 transition duration-150';
+
+      let cliRowsHtml = '';
+      if (cliExpanded) {
+        for (const [key, value] of Object.entries(cliMappings)) {
+          const safeKey = key.replace(/'/g, "\\'");
+          cliRowsHtml += `
+            <div class="flex items-center space-x-3 mt-3">
+              <input type="text" placeholder="Incoming Model (from CLI/SDK)" value="${key}"
+                     class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
+                     onchange="updateMappingKey('cli', '${safeKey}', this.value)"
+                     ${disabled ? 'disabled' : ''} />
+              <span class="text-slate-600 text-sm font-bold font-mono">&rarr;</span>
+              <input type="text" placeholder="Target Model (sent to provider)" value="${value}"
+                     class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
+                     onchange="updateMappingValue('cli', '${safeKey}', this.value)"
+                     ${disabled ? 'disabled' : ''} />
+              <button onclick="removeRow('cli', '${safeKey}')" class="px-2 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition duration-150 cursor-pointer focus:outline-none" title="Remove">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              </button>
+            </div>
+          `;
+        }
+      }
+
+      const cliArrow = cliExpanded
+        ? `<svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`
+        : `<svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`;
+
+      cliSection.innerHTML = `
+        <div class="flex items-center justify-between border-b border-orange-500/20 pb-3 cursor-pointer select-none" onclick="toggleSection('cli')">
+          <h3 class="text-sm font-bold text-orange-300 flex items-center space-x-2 heading">
+            <svg class="w-3.5 h-3.5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span>CLI / API Endpoint</span>
+            <span class="text-[10px] font-mono text-orange-400/60 font-normal">/v1/chat/completions</span>
+          </h3>
+          ${cliExpanded ? `
+          <button onclick="addRow('cli'); event.stopPropagation();" class="text-xs text-orange-400 hover:text-orange-300 font-bold flex items-center space-x-1.5 transition duration-150 cursor-pointer focus:outline-none rounded px-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span>Add Mapping</span>
+          </button>
+          ` : `<span class="text-xs text-slate-600">${Object.keys(cliMappings).length} rules</span>`}
+        </div>
+        ${cliExpanded ? `
+        <div class="space-y-1">
+          ${cliRowsHtml || '<p class="text-xs text-slate-600 mt-4 italic text-center py-2">No CLI mappings. Add rules to rename models before forwarding to provider.</p>'}
+        </div>
+        ` : ''}
+      `;
+      container.appendChild(cliSection);
+
+      // MITM tool sections
       const toolLabels = {
         antigravity: 'Google Antigravity',
         copilot: 'GitHub Copilot',
@@ -970,6 +1297,13 @@
       // Load console logs when switching to console tab
       if (tab === 'console') resumeConsolePoll();
       if (tab === 'providers') activateProvidersTab();
+      if (tab === 'settings') {
+        loadClientApiKeys();
+        loadConfig();
+      }
+      if (tab === 'proxy') {
+        loadProxyConfigs();
+      }
     }
 
     // ── Console Logs ───────────────────────────────────────────
@@ -1291,6 +1625,8 @@
           else showToast('Da login ChatGPT: ' + (data.label || data.email || 'OK'));
         } else if (pid === 'cursor') {
           showToast('Da login Cursor: ' + (data.label || data.email || 'OK'));
+        } else if (pid === 'opencode') {
+          showToast('Da import OpenCode: ' + (data.label || 'OK'));
         } else {
           showToast('Da import login local: ' + (data.label || pid));
         }
@@ -1302,7 +1638,43 @@
     function localLoginButtonLabel(pid) {
       if (pid === 'chatgpt') return 'Login tu Codex';
       if (pid === 'cursor') return 'Login tu Cursor';
+      if (pid === 'opencode') return 'Login tu OpenCode';
       return 'Login local';
+    }
+
+    async function loadOpenCodeStatus() {
+      try {
+        const res = await fetch('/api/admin/opencode/status');
+        const data = await res.json();
+        if (data.success) opencodeStatus = data.status;
+      } catch {
+        opencodeStatus = null;
+      }
+    }
+
+    function renderOpenCodeStatus(isActive) {
+      const s = opencodeStatus || {};
+      if (!isActive) {
+        return '<div class="mb-3 text-[10px] text-slate-600 italic">Bat radio/switch de start opencode serve + session</div>';
+      }
+      const running = s.running ? '<span class="text-emerald-400 font-bold">RUNNING</span>' : '<span class="text-rose-400 font-bold">STOPPED</span>';
+      return ''
+        + '<div class="mb-3 rounded-lg border border-orange-500/20 bg-orange-500/5 px-3 py-2 text-[10px] text-slate-400 space-y-1">'
+        + '<div><span class="text-slate-500">Serve:</span> ' + running + '</div>'
+        + '<div><span class="text-slate-500">Session:</span> <span class="font-mono text-orange-300">' + (s.sessionId || '—') + '</span></div>'
+        + '<div><span class="text-slate-500">Project:</span> <span class="font-mono break-all">' + (s.projectDir || '—') + '</span></div>'
+        + (s.lastError ? '<div class="text-rose-400">' + s.lastError + '</div>' : '')
+        + '</div>';
+    }
+
+    async function setOpenCodeFormat(format) {
+      const prov = ensureProviderEntry('opencode');
+      prov.responseFormat = format;
+      const ok = await syncToServer();
+      if (ok) {
+        showToast('Da set OpenCode response format sang ' + format);
+        renderProviders();
+      }
     }
 
     async function startOAuthLogin(pid) {
@@ -1338,14 +1710,14 @@
 
     async function exportAuthBackup() {
       try {
-        const res = await fetch('/api/admin/auth/backup/export');
+        const res = await fetch('/api/admin/config/export');
         const blob = await res.blob();
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'xmitm-auth-backup.json';
+        a.download = 'xmitm-config-backup.json';
         a.click();
         URL.revokeObjectURL(a.href);
-        showToast('Da export backup');
+        showToast('Da export full config (providers + routing + env)');
       } catch {
         showToast('Export that bai', 'error');
       }
@@ -1355,21 +1727,38 @@
       const file = ev.target.files?.[0];
       ev.target.value = '';
       if (!file) return;
-      const merge = confirm('Import MERGE (OK) giu du lieu cu + them moi?\nCancel = REPLACE toan bo auth store.');
       try {
         const text = await file.text();
         const json = JSON.parse(text);
-        const res = await fetch('/api/admin/auth/backup/import' + (merge ? '?merge=1' : ''), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(json),
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'Import failed');
-        await loadProviders();
-        await loadOAuthConnections();
-        renderProviders();
-        showToast(merge ? 'Import merge OK' : 'Import replace OK');
+        // Full config format (_xmitm marker) — use /config/import
+        if (json._xmitm) {
+          const res = await fetch('/api/admin/config/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(json),
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.error || 'Import failed');
+          await loadProviders();
+          await loadOAuthConnections();
+          renderProviders();
+          loadConfig();
+          showToast('Import OK: ' + (data.restored || []).join(', '));
+        } else {
+          // Legacy auth-store-only format
+          const merge = confirm('Import MERGE (OK) giu du lieu cu + them moi?\nCancel = REPLACE toan bo auth store.');
+          const res = await fetch('/api/admin/auth/backup/import' + (merge ? '?merge=1' : ''), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(json),
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.error || 'Import failed');
+          await loadProviders();
+          await loadOAuthConnections();
+          renderProviders();
+          showToast(merge ? 'Import merge OK' : 'Import replace OK');
+        }
       } catch (e) {
         showToast(e.message || 'Import that bai', 'error');
       }
@@ -1428,9 +1817,11 @@
       { id: 'antigravity', label: 'Antigravity', icon: '🚀', desc: 'Google OAuth', defaultBaseUrl: 'https://cloudcode-pa.googleapis.com', authModes: ['oauth'] },
       { id: 'copilot', label: 'GitHub Copilot', icon: '🐙', desc: 'GitHub OAuth', defaultBaseUrl: 'https://api.github.com', authModes: ['oauth'] },
       { id: 'cursor', label: 'Cursor IDE', icon: '✏️', desc: 'Login tu Cursor app tren may', defaultBaseUrl: 'https://api2.cursor.sh', authModes: ['oauth'] },
+      { id: 'opencode', label: 'OpenCode Session', icon: '🦊', desc: 'OpenCode terminal session (opencode serve)', defaultBaseUrl: 'http://127.0.0.1:4096', authModes: ['oauth'] },
     ];
 
-    const LOCAL_LOGIN_PROVIDERS = new Set(['cursor', 'chatgpt']);
+    const LOCAL_LOGIN_PROVIDERS = new Set(['cursor', 'chatgpt', 'opencode']);
+    let opencodeStatus = null;
 
     function getProviderList() {
       const byId = new Map();
@@ -1484,8 +1875,9 @@
     const quotaKeyReloading = new Set();
 
     function activateProvidersTab() {
-      Promise.all([loadProviderCatalog(), loadProviders(), loadOAuthConnections()]).then(() => {
+      Promise.all([loadProviderCatalog(), loadProviders(), loadOAuthConnections(), loadOpenCodeStatus(), loadProxyConfigs()]).then(() => {
         loadProviderQuotas(true);
+        renderProviders();
       });
       if (!providerQuotaTimer) {
         providerQuotaTimer = setInterval(() => loadProviderQuotas(true), 60000);
@@ -1600,6 +1992,7 @@
           return false;
         }
         if (result.data) serverProviders = result.data;
+        if (result.opencode) opencodeStatus = result.opencode;
         return true;
       } catch (e) {
         showToast('Failed to save to server', 'error');
@@ -1623,8 +2016,11 @@
         serverProviders.providers[id].enabled = id === pid;
       }
       const saved = await syncToServer();
+      if (pid === 'opencode') await loadOpenCodeStatus();
       renderProviders();
-      if (saved) showToast(`Active: ${pid}`);
+      if (saved) showToast(pid === 'opencode' && opencodeStatus?.sessionId
+        ? `OpenCode active: ${opencodeStatus.sessionId}`
+        : `Active: ${pid}`);
     }
 
     async function toggleProviderSwitch(pid) {
@@ -1635,6 +2031,7 @@
           serverProviders.providers[id].enabled = false;
         }
         const saved = await syncToServer();
+        await loadOpenCodeStatus();
         renderProviders();
         if (saved) showToast('Đã tắt routing');
       } else {
@@ -1707,6 +2104,16 @@
             <label class="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Upstream baseUrl</label>
             <div class="bg-black/30 border border-white/[0.04] rounded-md px-2 py-1 text-[10px] text-slate-500 font-mono break-all leading-snug">${baseUrl || p.defaultBaseUrl || '—'}</div>
           </div>
+          <div class="mb-3 space-y-1">
+            <label class="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Proxy</label>
+            <div class="flex items-center space-x-1.5">
+              <select onchange="setProviderProxy('${p.id}', this.value)" class="flex-1 bg-black/40 border border-white/[0.05] rounded-lg px-2 py-1 text-[10px] text-slate-300 focus:outline-none focus:border-teal-500/40 transition font-mono">
+                ${renderProxyOptions(prov.proxyId)}
+              </select>
+              <button type="button" onclick="switchTab('proxy')" class="flex-shrink-0 px-2 py-1 text-[9px] text-teal-400 hover:text-teal-300 font-bold cursor-pointer" title="Manage proxies">+ Manage</button>
+            </div>
+          </div>
+          ${p.id === 'opencode' ? renderOpenCodeStatus(isActive) : ''}
           ${renderAuthModeTabs(p.id)}
           ${showKeys ? (keys.length > 0 ? `
           <div class="border-t border-white/[0.03] pt-3 space-y-1.5">
@@ -1820,6 +2227,7 @@
     }
 
     // Init
+    switchTab('providers');
     startPolling();
     loadProviderCatalog().then(loadProviders);
     (function handleOAuthReturn() {
@@ -1835,6 +2243,421 @@
         history.replaceState({}, '', location.pathname);
       }
     })();
+
+    // ── Export / Import Config Functions ─────────────────────────
+    let selectedConfigFile = null;
+
+    // Register Drag & Drop events on DOM load / next tick
+    setTimeout(() => {
+      const dropzone = document.getElementById('import-dropzone');
+      if (dropzone) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+          dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-orange-500/60', 'bg-black/40');
+          }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+          dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-orange-500/60', 'bg-black/40');
+          }, false);
+        });
+        dropzone.addEventListener('drop', (e) => {
+          const dt = e.dataTransfer;
+          const files = dt.files;
+          if (files && files.length > 0) {
+            handleImportFile(files[0]);
+          }
+        }, false);
+      }
+    }, 100);
+
+    function handleImportFileSelect(e) {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleImportFile(files[0]);
+      }
+    }
+
+    function handleImportFile(file) {
+      if (!file.name.endsWith('.json')) {
+        showToast('Only JSON configuration files are supported.', 'error');
+        return;
+      }
+      selectedConfigFile = file;
+      document.getElementById('dropzone-text').textContent = 'File selected:';
+      const fileInfo = document.getElementById('selected-file-info');
+      fileInfo.textContent = `${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+      fileInfo.classList.remove('hidden');
+
+      // Enable submit button
+      const submitBtn = document.getElementById('btn-import-submit');
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('cursor-not-allowed', 'opacity-40');
+      submitBtn.classList.add('glow-orange');
+
+      // Show reset button
+      document.getElementById('btn-import-reset').classList.remove('hidden');
+    }
+
+    function resetImportFile() {
+      selectedConfigFile = null;
+      document.getElementById('import-file-input').value = '';
+      document.getElementById('dropzone-text').textContent = 'Click or Drag & Drop JSON file here';
+      document.getElementById('selected-file-info').classList.add('hidden');
+
+      const submitBtn = document.getElementById('btn-import-submit');
+      submitBtn.disabled = true;
+      submitBtn.classList.add('cursor-not-allowed', 'opacity-40');
+      submitBtn.classList.remove('glow-orange');
+
+      document.getElementById('btn-import-reset').classList.add('hidden');
+    }
+
+    async function submitImportConfig() {
+      if (!selectedConfigFile) return;
+
+      const submitBtn = document.getElementById('btn-import-submit');
+      const originalHtml = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white inline-block" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>Restoring...</span>
+      `;
+
+      try {
+        const text = await selectedConfigFile.text();
+        const parsed = JSON.parse(text);
+        if (!parsed._xmitm) {
+          throw new Error("Missing _xmitm validation marker in JSON.");
+        }
+
+        const res = await fetch('/api/admin/config/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: text
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Configuration restored successfully! Reloading...');
+          resetImportFile();
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          throw new Error(data.error || 'Server rejected import');
+        }
+      } catch (err) {
+        showToast(`Import failed: ${err.message}`, 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+      }
+    }
+
+    async function exportFullConfig() {
+      showToast('Preparing download...');
+      try {
+        const res = await fetch('/api/admin/config/export');
+        if (!res.ok) throw new Error('Failed to fetch export');
+        
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        
+        const disp = res.headers.get('content-disposition');
+        let filename = `xmitm-config-${new Date().toISOString().slice(0,19).replace(/[:.]/g, '-')}.json`;
+        if (disp && disp.indexOf('attachment') !== -1) {
+          const match = disp.match(/filename="(.+)"/);
+          if (match && match[1]) filename = match[1];
+        }
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        showToast('Configuration file downloaded.');
+      } catch (err) {
+        showToast(`Export failed: ${err.message}`, 'error');
+      }
+    }
+
+    // ── Proxy Management ─────────────────────────────────────────
+    let _proxyList = [];
+
+    function renderProxyOptions(selectedId) {
+      let opts = `<option value="">— Direct (no proxy) —</option>`;
+      for (const p of _proxyList) {
+        const sel = p.id === selectedId ? 'selected' : '';
+        opts += `<option value="${p.id}" ${sel}>${escapeHtml(p.label)} (${escapeHtml(p.type.toUpperCase())})</option>`;
+      }
+      return opts;
+    }
+
+    async function loadProxyConfigs() {
+      try {
+        const res = await fetch('/api/admin/proxies');
+        const data = await res.json();
+        _proxyList = data.proxies || [];
+        renderProxyList();
+      } catch (err) {
+        showToast('Failed to load proxy configs', 'error');
+      }
+    }
+
+    function renderProxyList() {
+      const tbody = document.getElementById('proxy-list-body');
+      if (!tbody) return;
+      if (_proxyList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-500 italic">No proxies configured. Add one above.</td></tr>`;
+        return;
+      }
+      // Count how many providers use each proxy
+      const usageMap = {};
+      if (window.serverProviders?.providers) {
+        for (const [pid, prov] of Object.entries(serverProviders.providers)) {
+          if (prov.proxyId) usageMap[prov.proxyId] = (usageMap[prov.proxyId] || []).concat(pid);
+        }
+      }
+      tbody.innerHTML = _proxyList.map(p => {
+        const users = (usageMap[p.id] || []).join(', ') || '—';
+        let masked = p.url;
+        try {
+          const u = new URL(p.url);
+          if (u.password) {
+            u.password = '****';
+            masked = u.toString();
+          }
+        } catch(e) {}
+        return `
+          <tr class="hover:bg-white/[0.01] transition duration-150">
+            <td class="py-3 font-semibold text-slate-300">${escapeHtml(p.label)}</td>
+            <td class="py-3 font-mono text-slate-400 text-[10px] max-w-xs truncate" title="${escapeHtml(p.url)}">${escapeHtml(masked)}</td>
+            <td class="py-3 text-center"><span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-teal-500/10 text-teal-400">${escapeHtml(p.type)}</span></td>
+            <td class="py-3 text-center text-slate-500 text-[10px]">${escapeHtml(users)}</td>
+            <td class="py-3 text-right">
+              <button onclick="deleteProxyConfig('${p.id}')" class="text-rose-400/80 hover:text-rose-400 px-2.5 py-1 rounded bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/10 transition duration-150 cursor-pointer focus:outline-none text-[10px]" type="button">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function addProxyConfig() {
+      const label = document.getElementById('proxy-form-label').value.trim();
+      const url = document.getElementById('proxy-form-url').value.trim();
+      const type = document.getElementById('proxy-form-type').value;
+      if (!label || !url) {
+        showToast('Please fill in Label and Proxy URL', 'error');
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/proxies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label, url, type })
+        });
+        const result = await res.json();
+        if (result.success) {
+          document.getElementById('proxy-form-label').value = '';
+          document.getElementById('proxy-form-url').value = '';
+          showToast('Proxy added!', 'success');
+          await loadProxyConfigs();
+        } else {
+          showToast(result.error || 'Failed to add proxy', 'error');
+        }
+      } catch (err) {
+        showToast('Network error', 'error');
+      }
+    }
+
+    async function deleteProxyConfig(id) {
+      if (!confirm('Delete this proxy? Providers using it will revert to direct connection.')) return;
+      try {
+        const res = await fetch(`/api/admin/proxies?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (result.success) {
+          showToast('Proxy deleted', 'success');
+          await loadProxyConfigs();
+          renderProviders();
+        } else {
+          showToast(result.error || 'Failed to delete proxy', 'error');
+        }
+      } catch (err) {
+        showToast('Network error', 'error');
+      }
+    }
+
+    async function setProviderProxy(providerId, proxyId) {
+      if (!serverProviders?.providers?.[providerId]) return;
+      serverProviders.providers[providerId].proxyId = proxyId || null;
+      await syncToServer();
+      showToast(`Proxy updated for ${providerId}`, 'success');
+    }
+
+    // ── Client API Keys Management ────────────────────────────────
+
+    function generateRouterApiKey() {
+      const len = 32;
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let result = 'sk-router-';
+      for (let i = 0; i < len; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      document.getElementById('config-api-key').value = result;
+      // Temporarily reveal the key input so user knows it changed
+      const keyInput = document.getElementById('config-api-key');
+      const oldType = keyInput.type;
+      keyInput.type = 'text';
+      setTimeout(() => {
+        keyInput.type = oldType;
+      }, 5000);
+      showToast('Generated ROUTER_API_KEY. Click Save Configuration to apply!', 'success');
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Copy failed — please copy manually', 'error');
+      });
+    }
+
+    async function loadClientApiKeys() {
+      try {
+        const res = await fetch('/api/admin/client-keys');
+        const data = await res.json();
+        const keys = data.keys || [];
+        const tbody = document.getElementById('client-keys-list-body');
+        if (!tbody) return;
+        
+        if (!keys || keys.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="4" class="py-6 text-center text-slate-500 italic">
+                No Client API keys generated yet. Authentication is bypassed.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = keys.map(k => {
+          const dateStr = new Date(k.createdAt).toLocaleString();
+          return `
+            <tr class="hover:bg-white/[0.01] transition duration-150">
+              <td class="py-3 font-semibold text-slate-300">${escapeHtml(k.label || 'Unnamed Key')}</td>
+              <td class="py-3 font-mono text-slate-400">
+                <div class="flex items-center space-x-2">
+                  <span id="key-text-${k.id}" class="select-all">${escapeHtml(k.key.substring(0, 12))}...</span>
+                  <button onclick="toggleClientKeyVisibility('${k.id}', '${k.key}')" class="text-slate-500 hover:text-slate-300 focus:outline-none cursor-pointer" type="button" title="Reveal Key">
+                    <svg id="eye-svg-${k.id}" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                  </button>
+                  <button onclick="copyClientKey('${k.key}')" class="text-slate-500 hover:text-indigo-400 focus:outline-none cursor-pointer" type="button" title="Copy Key">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+              <td class="py-3 text-slate-400 text-center">${dateStr}</td>
+              <td class="py-3 text-right">
+                <button onclick="deleteClientApiKey('${k.id}')" class="text-rose-400/80 hover:text-rose-400 px-2.5 py-1 rounded bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/10 transition duration-150 cursor-pointer focus:outline-none" type="button" title="Revoke Key">
+                  Revoke
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        showToast('Failed to load client keys', 'error');
+      }
+    }
+
+    const clientKeyStates = {};
+    function toggleClientKeyVisibility(id, fullKey) {
+      const span = document.getElementById(`key-text-${id}`);
+      const btnSvg = document.getElementById(`eye-svg-${id}`);
+      if (!span || !btnSvg) return;
+      
+      const isRevealed = clientKeyStates[id];
+      if (isRevealed) {
+        span.innerText = `${fullKey.substring(0, 12)}...`;
+        clientKeyStates[id] = false;
+        btnSvg.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+        `;
+      } else {
+        span.innerText = fullKey;
+        clientKeyStates[id] = true;
+        btnSvg.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.05 10.05 0 013.69-4.622M6.343 6.343A10.003 10.003 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.05 10.05 0 01-2.154 3.448M6.343 6.343L3 3m3.343 3.343l3.657 3.657m0 0a3 3 0 114.243 4.242m-4.243-4.242L17.657 17.657"></path>
+        `;
+      }
+    }
+
+    function copyClientKey(key) {
+      navigator.clipboard.writeText(key).then(() => {
+        showToast('Client API key copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Failed to copy key automatically.', 'error');
+      });
+    }
+
+    async function createClientApiKey() {
+      const labelInput = document.getElementById('client-key-label');
+      const label = labelInput.value.trim();
+      if (!label) {
+        showToast('Please enter a description label first', 'error');
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/client-keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label })
+        });
+        const result = await res.json();
+        if (result.success) {
+          labelInput.value = '';
+          showToast('New client API key created!', 'success');
+          await loadClientApiKeys();
+        } else {
+          showToast(result.error || 'Failed to create client key', 'error');
+        }
+      } catch (err) {
+        showToast('Network error during client key creation', 'error');
+      }
+    }
+
+    async function deleteClientApiKey(id) {
+      if (!confirm('Are you sure you want to revoke this Client API Key? Scripts using this key will immediately be denied access.')) {
+        return;
+      }
+      try {
+        const res = await fetch(`/api/admin/client-keys?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE'
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast('Client API key revoked', 'success');
+          await loadClientApiKeys();
+        } else {
+          showToast(result.error || 'Failed to revoke key', 'error');
+        }
+      } catch (err) {
+        showToast('Network error during key revocation', 'error');
+      }
+    }
   </script>
 </body>
 </html>

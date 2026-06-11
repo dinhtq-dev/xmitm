@@ -218,6 +218,27 @@ async function probeByProvider(providerId, baseUrl, key) {
       return (await probeGlmQuota(key, "china")) || probeOpenAiCompat(baseUrl, key, providerId);
     case "cohere":
       return probeCohere(key, baseUrl);
+    case "opencode": {
+      try {
+        const { getPublicStatus, resolveOpencodeBinary } = require("./opencode/sessionProvider");
+        if (!resolveOpencodeBinary()) {
+          return { ok: false, status: "unreachable", label: "Khong tim thay opencode CLI", source: providerId };
+        }
+        const status = getPublicStatus();
+        if (status.running && status.sessionId) {
+          return {
+            ok: true,
+            status: "ok",
+            percent: 100,
+            label: "Session " + status.sessionId.slice(0, 16) + "…",
+            source: providerId,
+          };
+        }
+        return { ok: true, status: "ok", percent: 100, label: "OpenCode imported", source: providerId };
+      } catch (e) {
+        return { ok: false, status: "unknown", label: e.message, source: providerId };
+      }
+    }
     case "anthropic":
     case "openai":
     case "chatgpt":

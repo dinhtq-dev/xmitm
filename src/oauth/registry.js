@@ -52,6 +52,7 @@ const PROVIDER_OAUTH = {
   claude: { driver: "anthropic", scopes: DRIVERS.anthropic.defaultScopes },
   cursor: { driver: "cursor", scopes: [] },
   chatgpt: { driver: "local", scopes: [] },
+  opencode: { driver: "local", scopes: [] },
 };
 
 function getOAuthConfig(providerId) {
@@ -85,7 +86,7 @@ function getDriverCredentials(driverId) {
 }
 
 function listOAuthProvidersPublic() {
-  const localProviders = new Set(["cursor", "chatgpt"]);
+  const localProviders = new Set(["cursor", "chatgpt", "opencode"]);
   return Object.keys(PROVIDER_OAUTH).map((pid) => {
     if (localProviders.has(pid)) {
       return {
