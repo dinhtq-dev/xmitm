@@ -192,6 +192,10 @@
           <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
           Model Routing Rules
         </button>
+        <button id="tab-converters" onclick="switchTab('converters')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
+          <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+          Req / Res
+        </button>
         <button id="tab-dns" onclick="switchTab('dns')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
           <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           DNS Redirection
@@ -305,8 +309,8 @@
       <!-- Tab Content: Model Routing -->
       <div id="panel-routing" class="tab-panel hidden">
         <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
-          <div class="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl"></div>
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-white/[0.03]">
+          <div class="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-white/[0.03]">
             <div>
               <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
                 <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
@@ -314,12 +318,45 @@
               </h2>
               <p class="text-xs text-slate-500 mt-1">Intercepted requests will have their model renamed to the destination model.</p>
             </div>
-            <button id="btn-save-mappings" onclick="saveAllMappings()" class="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-lg glow-orange transition duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-[#080504]">
+            <button type="button" id="btn-save-mappings" onclick="saveAllMappings()" class="relative z-20 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-lg glow-orange transition duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-[#080504]">
               Save Mappings
             </button>
           </div>
-          <div id="mapping-editor" class="space-y-6 flex-1">
+          <div id="mapping-editor" class="relative z-10 space-y-6 flex-1">
             <!-- Dyn map layout -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Req/Res Converters -->
+      <div id="panel-converters" class="tab-panel hidden">
+        <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
+          <div class="absolute -right-12 -top-12 w-48 h-48 bg-violet-500/10 rounded-full blur-3xl"></div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-white/[0.03]">
+            <div>
+              <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
+                <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10m0-5h16M20 7v10m0-5H4"></path></svg>
+                <span>Custom API Proxy</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-1"><code class="text-slate-400">POST localhost:3000/v1</code> — fake model, convert REQ/RES. <strong class="text-violet-300">Không cần MITM.</strong> Chọn format client (Codex/Claude).</p>
+            </div>
+            <button onclick="loadConverters()" class="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 text-xs font-bold rounded-xl border border-white/[0.06] transition cursor-pointer">Refresh</button>
+          </div>
+
+          <div class="hidden sm:grid grid-cols-12 gap-3 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-white/[0.03] mb-3">
+            <div class="col-span-1 text-center">Active</div>
+            <div class="col-span-6">Client format (REQ in / RES out)</div>
+            <div class="col-span-5 text-right">Status</div>
+          </div>
+
+          <div id="converters-list" class="space-y-3">
+            <div class="text-center text-slate-600 py-10 italic text-sm">Loading converter settings…</div>
+          </div>
+
+          <div class="mt-5 p-3 rounded-xl bg-violet-500/[0.03] border border-violet-500/10 space-y-1">
+            <p class="text-[10px] text-slate-500 leading-relaxed">
+              <span class="text-violet-400 font-bold">Auto RES:</span> tự nhận format response (OpenAI/Gemini/Anthropic) và convert về format client đã chọn — không cần biết đi qua 9router hay provider nào. <span class="text-violet-400 font-bold">Postman:</span> <code class="text-slate-400">POST :3000/v1/chat/completions</code> + <code class="text-slate-400">Bearer &lt;client-key&gt;</code>. Config: <code id="converters-config-path" class="text-slate-400">data/converter-toggles.json</code>.
+            </p>
           </div>
         </div>
       </div>
@@ -652,6 +689,19 @@
     };
 
     const dnsToggleBusy = {};
+    let mappingDirty = false;
+    const ROUTING_TOOLS = ['cli', 'antigravity', 'copilot', 'kiro', 'cursor'];
+    let converterToggles = {};
+    let converterApiProxyClient = null;
+    let converterMeta = [];
+    let converterConfigPath = '';
+    let converterApiReady = false;
+    const converterToggleBusy = {};
+
+    const FALLBACK_CONVERTER_META = [
+      { id: 'codex', label: 'Codex / OpenAI CLI', icon: '🤖', route: 'Custom API :3000/v1', nativeFormat: 'OpenAI chat.completions', apiProxy: true },
+      { id: 'claude', label: 'Claude Code CLI', icon: '🧠', route: 'Custom API :3000/v1', nativeFormat: 'Anthropic messages', apiProxy: true },
+    ];
 
     function showToast(text, type = 'success') {
       const toast = document.getElementById('toast');
@@ -712,6 +762,153 @@
       if (cb) cb.checked = checked;
     }
 
+    // ── Req/Res Converters ───────────────────────────────────────
+    function renderConvertersList(opts = {}) {
+      const container = document.getElementById('converters-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (opts.banner) {
+        const banner = document.createElement('div');
+        banner.className = 'mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs leading-relaxed';
+        banner.innerHTML = opts.banner;
+        container.appendChild(banner);
+      }
+
+      const list = converterMeta.length ? converterMeta : FALLBACK_CONVERTER_META;
+      if (!list.length) {
+        container.innerHTML += '<div class="text-center text-slate-600 py-10 italic text-sm">No clients configured.</div>';
+        return;
+      }
+
+      const passthroughRow = document.createElement('div');
+      passthroughRow.className = `grid grid-cols-1 sm:grid-cols-12 gap-4 items-center p-4 rounded-xl border transition cursor-pointer ${!converterApiProxyClient ? 'bg-violet-500/10 border-violet-500/30' : 'bg-white/[0.02] border-white/[0.04] hover:border-white/[0.08]'}`;
+      passthroughRow.onclick = () => activateConverterClient(null);
+      passthroughRow.innerHTML = `
+        <div class="sm:col-span-1 flex justify-center">
+          <input type="radio" name="conv-active-client" class="accent-violet-500 w-4 h-4 cursor-pointer" ${!converterApiProxyClient ? 'checked' : ''}
+            onclick="event.stopPropagation(); activateConverterClient(null)" />
+        </div>
+        <div class="sm:col-span-6 flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-lg bg-slate-500/10 flex items-center justify-center text-lg shrink-0">⏭️</div>
+          <div>
+            <div class="text-sm font-bold text-slate-300">Passthrough</div>
+            <div class="text-[10px] text-slate-600 mt-0.5">Không convert — forward thẳng provider</div>
+          </div>
+        </div>
+        <div class="sm:col-span-5 flex sm:justify-end">
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border text-slate-500 bg-white/[0.03] border-white/[0.06]">OFF</span>
+        </div>
+      `;
+      container.appendChild(passthroughRow);
+
+      for (const item of list) {
+        const isActive = converterApiProxyClient === item.id;
+        const row = document.createElement('div');
+        row.className = `grid grid-cols-1 sm:grid-cols-12 gap-4 items-center p-4 rounded-xl border transition cursor-pointer ${isActive ? 'bg-violet-500/10 border-violet-500/30' : 'bg-white/[0.02] border-white/[0.04] hover:border-violet-500/20'}`;
+        row.onclick = () => activateConverterClient(item.id);
+        row.innerHTML = `
+          <div class="sm:col-span-1 flex justify-center">
+            <input type="radio" name="conv-active-client" class="accent-violet-500 w-4 h-4 cursor-pointer" ${isActive ? 'checked' : ''}
+              onclick="event.stopPropagation(); activateConverterClient('${item.id}')" />
+          </div>
+          <div class="sm:col-span-6 flex items-start space-x-3">
+            <div class="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center text-lg shrink-0">${item.icon}</div>
+            <div class="min-w-0">
+              <div class="text-sm font-bold text-slate-200">${item.label}</div>
+              <div class="text-[10px] font-mono text-slate-500 mt-0.5">${item.id}</div>
+              <div class="text-[10px] text-slate-600 mt-1">${item.route} · <span class="text-violet-400/80">${item.nativeFormat}</span></div>
+            </div>
+          </div>
+          <div class="sm:col-span-5 flex sm:justify-end items-center gap-2">
+            ${isActive ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold border text-emerald-400 bg-emerald-500/10 border-emerald-500/20">NATIVE REQ+RES</span>' : '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold border text-slate-600 bg-white/[0.02] border-white/[0.06]">—</span>'}
+          </div>
+        `;
+        container.appendChild(row);
+      }
+    }
+
+    async function loadConverters() {
+      const container = document.getElementById('converters-list');
+      try {
+        const res = await fetch('/api/admin/converters');
+        let data = null;
+        try {
+          data = await res.json();
+        } catch {
+          throw new Error('API không trả JSON — hãy restart admin server');
+        }
+
+        if (res.status === 404) {
+          converterApiReady = false;
+          converterMeta = FALLBACK_CONVERTER_META;
+          converterToggles = {};
+          renderConvertersList({
+            banner: '⚠️ <strong>Admin server đang chạy bản cũ</strong> (thiếu API /api/admin/converters). Chạy lại <code class="text-amber-100">pnpm start</code> để bật/tắt và lưu config. Danh sách bên dưới chỉ xem trước.',
+          });
+          return;
+        }
+
+        if (!res.ok || !data.success) {
+          throw new Error(data?.error || `HTTP ${res.status}`);
+        }
+
+        converterApiReady = true;
+        converterToggles = data.toggles || {};
+        converterApiProxyClient = data.apiProxyClient || data.activeClient || data.toggles?.apiProxyClient || null;
+        converterMeta = (data.meta && data.meta.length) ? data.meta : FALLBACK_CONVERTER_META;
+        if (!data.meta?.length && Array.isArray(data.clients) && data.clients.length) {
+          converterMeta = FALLBACK_CONVERTER_META.filter(m => data.clients.includes(m.id));
+        }
+        converterConfigPath = data.configFile || '';
+        const pathEl = document.getElementById('converters-config-path');
+        if (pathEl && converterConfigPath) pathEl.textContent = converterConfigPath;
+        renderConvertersList();
+      } catch (err) {
+        if (container) {
+          container.innerHTML = `<div class="text-center py-10 px-4"><p class="text-rose-400 text-sm">${err.message}</p><p class="text-slate-500 text-xs mt-3">Restart: <code class="text-slate-400">pnpm start</code></p></div>`;
+        }
+        showToast('Không tải được converter settings: ' + err.message, 'error');
+      }
+    }
+
+    async function activateConverterClient(client) {
+      if (!converterApiReady) {
+        showToast('Restart admin server: pnpm start', 'error');
+        return;
+      }
+      const prev = converterApiProxyClient;
+      if (converterToggleBusy.activate) return;
+      converterToggleBusy.activate = true;
+      try {
+        const res = await fetch('/api/admin/converters/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ client: client || null })
+        });
+        const data = await res.json();
+        if (!data.success) {
+          showToast(data.error || 'Failed to save', 'error');
+          return;
+        }
+        converterToggles = data.toggles || converterToggles;
+        converterApiProxyClient = data.apiProxyClient || data.activeClient || null;
+        renderConvertersList();
+        if (client) {
+          const label = converterMeta.find(m => m.id === client)?.label || client;
+          const nf = converterMeta.find(m => m.id === client)?.nativeFormat || '';
+          showToast(`Custom API: ${label} — REQ/RES ${nf}`);
+        } else {
+          showToast('Passthrough — không convert');
+        }
+      } catch (err) {
+        converterApiProxyClient = prev;
+        showToast('Network error saving converter', 'error');
+      } finally {
+        converterToggleBusy.activate = false;
+      }
+    }
+
     // ── Config ───────────────────────────────────────────────────
     let apiKeyVisible = false;
 
@@ -751,12 +948,7 @@
       });
       saveBtn.disabled = running;
       saveBtn.title = running ? 'Disabled while MITM server is running' : '';
-      if (saveMappingsBtn) {
-        saveMappingsBtn.disabled = running;
-        saveMappingsBtn.classList.toggle('opacity-30', running);
-        saveMappingsBtn.classList.toggle('cursor-not-allowed', running);
-        saveMappingsBtn.title = running ? 'Disabled while MITM server is running' : '';
-      }
+      // Model routing có thể sửa/lưu khi MITM đang chạy (aliases.json đọc lại mỗi request)
     }
 
     async function saveConfig() {
@@ -952,10 +1144,14 @@
       try {
         const res = await fetch('/api/admin/status');
         const data = await res.json();
+        const preservedMappings = mappingDirty ? state.mappings : data.mappings;
         state = data;
+        if (mappingDirty) state.mappings = preservedMappings;
+        ensureMappingsState();
         updateStatusBadge(data.mitmRunning);
         updateConfigDisabled(data.mitmRunning);
         render();
+        if (!mappingDirty) renderMappingsOnly();
       } catch (err) {
         showToast('Failed to connect to Admin API', 'error');
       }
@@ -1001,38 +1197,110 @@
       }
     }
 
+    function escapeHtmlAttr(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function markMappingDirty() {
+      mappingDirty = true;
+    }
+
+    function ensureMappingsState() {
+      if (!state.mappings || typeof state.mappings !== 'object') {
+        state.mappings = {};
+      }
+      for (const tool of ROUTING_TOOLS) {
+        if (!state.mappings[tool] || typeof state.mappings[tool] !== 'object') {
+          state.mappings[tool] = {};
+        }
+      }
+    }
+
+    /** Đồng bộ các hàng đang hiển thị trong DOM → state (giữ nguyên section đang thu gọn). */
+    function syncMappingsFromEditor() {
+      ensureMappingsState();
+      const container = document.getElementById('mapping-editor');
+      if (!container) return;
+      const toolsInDom = new Set();
+      container.querySelectorAll('[data-mapping-row]').forEach((row) => {
+        const tool = row.dataset.tool;
+        const keyInput = row.querySelector('[data-mapping-key]');
+        const valInput = row.querySelector('[data-mapping-value]');
+        if (!tool || !keyInput || !valInput) return;
+        if (!toolsInDom.has(tool)) {
+          toolsInDom.add(tool);
+          state.mappings[tool] = {};
+        }
+        const k = keyInput.value.trim();
+        if (k) state.mappings[tool][k] = String(valInput.value ?? '').trim();
+      });
+    }
+
+    function buildMappingsPayload() {
+      syncMappingsFromEditor();
+      const cleanMappings = {};
+      for (const tool of ROUTING_TOOLS) {
+        cleanMappings[tool] = {};
+        const maps = state.mappings[tool] || {};
+        for (const [k, v] of Object.entries(maps)) {
+          const key = String(k).trim();
+          if (key) cleanMappings[tool][key] = String(v ?? '').trim();
+        }
+      }
+      return cleanMappings;
+    }
+
+    function bindMappingEditorEvents() {
+      const container = document.getElementById('mapping-editor');
+      if (!container || container.dataset.bound === '1') return;
+      container.dataset.bound = '1';
+      container.addEventListener('input', (e) => {
+        const t = e.target;
+        if (t && t.matches && t.matches('[data-mapping-key], [data-mapping-value]')) {
+          mappingDirty = true;
+        }
+      });
+    }
+
     function addRow(tool) {
+      syncMappingsFromEditor();
       if (!state.mappings[tool]) state.mappings[tool] = {};
       if (state.mappings[tool][""] !== undefined) return;
       state.mappings[tool][""] = "";
+      mappingDirty = true;
       renderMappingsOnly();
     }
 
-    function removeRow(tool, key) {
-      delete state.mappings[tool][key];
+    function removeMappingRow(btn) {
+      syncMappingsFromEditor();
+      const row = btn.closest('[data-mapping-row]');
+      if (!row) return;
+      const tool = row.dataset.tool;
+      const keyInput = row.querySelector('[data-mapping-key]');
+      const key = keyInput ? keyInput.value : '';
+      if (state.mappings[tool]) {
+        delete state.mappings[tool][key];
+        if (key === '' && Object.prototype.hasOwnProperty.call(state.mappings[tool], '')) {
+          delete state.mappings[tool][''];
+        }
+      }
+      mappingDirty = true;
       renderMappingsOnly();
-    }
-
-    function updateMappingKey(tool, oldKey, newKey) {
-      if (oldKey === newKey) return;
-      const value = state.mappings[tool][oldKey];
-      delete state.mappings[tool][oldKey];
-      state.mappings[tool][newKey] = value;
-    }
-
-    function updateMappingValue(tool, key, value) {
-      state.mappings[tool][key] = value;
     }
 
     async function saveAllMappings() {
-      const cleanMappings = {};
-      for (const [tool, maps] of Object.entries(state.mappings)) {
-        cleanMappings[tool] = {};
-        for (const [k, v] of Object.entries(maps)) {
-          if (k.trim() !== "") {
-            cleanMappings[tool][k.trim()] = v.trim();
-          }
-        }
+      const cleanMappings = buildMappingsPayload();
+      const ruleCount = ROUTING_TOOLS.reduce((n, t) => n + Object.keys(cleanMappings[t] || {}).length, 0);
+
+      const btn = document.getElementById('btn-save-mappings');
+      const prevLabel = btn ? btn.innerText : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Saving...';
       }
 
       try {
@@ -1041,15 +1309,26 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mappings: cleanMappings })
         });
-        const result = await res.json();
-        if (result.success) {
-          showToast('Model mappings saved and loaded successfully');
-          loadStatus();
-        } else {
-          showToast(result.error || 'Failed to save mappings', 'error');
+        let result = {};
+        try {
+          result = await res.json();
+        } catch {
+          throw new Error(res.status === 404 ? 'API không tồn tại — restart: pnpm start' : `Server trả lỗi HTTP ${res.status}`);
         }
+        if (!res.ok || !result.success) {
+          throw new Error(result.error || `Lưu thất bại (HTTP ${res.status})`);
+        }
+        mappingDirty = false;
+        state.mappings = cleanMappings;
+        showToast(`Đã lưu ${ruleCount} routing rule(s)`);
+        renderMappingsOnly();
       } catch (err) {
-        showToast('Network error during save', 'error');
+        showToast(err.message || 'Network error during save', 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = prevLabel || 'Save Mappings';
+        }
       }
     }
 
@@ -1070,7 +1349,6 @@
       }
 
       renderDnsList();
-      renderMappingsOnly();
     }
 
     function renderDnsList() {
@@ -1139,6 +1417,7 @@
     // Track expanded status for each tool (first section expanded by default)
     if (window.expandedToolSections === undefined) {
       window.expandedToolSections = {
+        cli: false,
         antigravity: true,
         copilot: false,
         kiro: false,
@@ -1147,15 +1426,31 @@
     }
 
     function toggleSection(tool) {
+      if (mappingDirty) syncMappingsFromEditor();
       window.expandedToolSections[tool] = !window.expandedToolSections[tool];
       renderMappingsOnly();
     }
 
-    function renderMappingsOnly() {
-      const container = document.getElementById('mapping-editor');
-      container.innerHTML = '';
+    function renderMappingRow(tool, key, value) {
+      return `
+        <div class="flex items-center space-x-3 mt-3" data-mapping-row data-tool="${tool}">
+          <input type="text" data-mapping-key placeholder="Incoming Model (from IDE)" value="${escapeHtmlAttr(key)}"
+                 class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150" />
+          <span class="text-slate-600 text-sm font-bold font-mono">&rarr;</span>
+          <input type="text" data-mapping-value placeholder="Target Model" value="${escapeHtmlAttr(value)}"
+                 class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150" />
+          <button type="button" onclick="removeMappingRow(this)" class="px-2 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition duration-150 cursor-pointer focus:outline-none" title="Remove">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </div>
+      `;
+    }
 
-      const disabled = state.mitmRunning;
+    function renderMappingsOnly() {
+      ensureMappingsState();
+      const container = document.getElementById('mapping-editor');
+      if (!container) return;
+      container.innerHTML = '';
 
       // CLI section rendered separately (top, distinct style)
       const cliMappings = state.mappings['cli'] || {};
@@ -1166,23 +1461,7 @@
       let cliRowsHtml = '';
       if (cliExpanded) {
         for (const [key, value] of Object.entries(cliMappings)) {
-          const safeKey = key.replace(/'/g, "\\'");
-          cliRowsHtml += `
-            <div class="flex items-center space-x-3 mt-3">
-              <input type="text" placeholder="Incoming Model (from CLI/SDK)" value="${key}"
-                     class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
-                     onchange="updateMappingKey('cli', '${safeKey}', this.value)"
-                     ${disabled ? 'disabled' : ''} />
-              <span class="text-slate-600 text-sm font-bold font-mono">&rarr;</span>
-              <input type="text" placeholder="Target Model (sent to provider)" value="${value}"
-                     class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
-                     onchange="updateMappingValue('cli', '${safeKey}', this.value)"
-                     ${disabled ? 'disabled' : ''} />
-              <button onclick="removeRow('cli', '${safeKey}')" class="px-2 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition duration-150 cursor-pointer focus:outline-none" title="Remove">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-              </button>
-            </div>
-          `;
+          cliRowsHtml += renderMappingRow('cli', key, value);
         }
       }
 
@@ -1229,23 +1508,7 @@
         let rowsHtml = '';
         if (isExpanded) {
           for (const [key, value] of Object.entries(mappings)) {
-            const safeKey = key.replace(/'/g, "\\'");
-            rowsHtml += `
-              <div class="flex items-center space-x-3 mt-3">
-                <input type="text" placeholder="Incoming Model (from IDE)" value="${key}" 
-                       class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
-                       onchange="updateMappingKey('${tool}', '${safeKey}', this.value)"
-                       ${disabled ? 'disabled' : ''} />
-                <span class="text-slate-600 text-sm font-bold font-mono">&rarr;</span>
-                <input type="text" placeholder="Target 9Router Model" value="${value}" 
-                       class="flex-1 bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition duration-150 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
-                       onchange="updateMappingValue('${tool}', '${safeKey}', this.value)"
-                       ${disabled ? 'disabled' : ''} />
-                <button onclick="removeRow('${tool}', '${safeKey}')" class="px-2 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500" title="Remove">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
-              </div>
-            `;
+            rowsHtml += renderMappingRow(tool, key, value);
           }
         }
 
@@ -1306,6 +1569,13 @@
       }
       if (tab === 'proxy') {
         loadProxyConfigs();
+      }
+      if (tab === 'converters') {
+        loadConverters();
+      }
+      if (tab === 'routing') {
+        bindMappingEditorEvents();
+        if (!mappingDirty) renderMappingsOnly();
       }
     }
 
@@ -1503,6 +1773,7 @@
     let pollInterval = null;
 
     function startPolling() {
+      bindMappingEditorEvents();
       if (pollInterval) clearInterval(pollInterval);
       loadStatus();
       loadConfig();
@@ -1518,11 +1789,14 @@
       try {
         const res = await fetch('/api/admin/status');
         const data = await res.json();
-        // DNS state always comes from hosts file (server truth)
+        const preservedMappings = mappingDirty ? state.mappings : data.mappings;
         state = data;
+        if (mappingDirty) state.mappings = preservedMappings;
+        ensureMappingsState();
         updateStatusBadge(data.mitmRunning);
         updateConfigDisabled(data.mitmRunning);
         render();
+        if (!mappingDirty) renderMappingsOnly();
       } catch (err) {
         showToast('Failed to connect to Admin API', 'error');
       }
@@ -1639,19 +1913,57 @@
       }
     }
 
+    function openCodeActionButtons() {
+      return ''
+        + '<div class="flex flex-wrap gap-2 mt-2">'
+        + '<button type="button" onclick="event.stopPropagation(); createOpenCodeSession()" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-orange-500/15 text-orange-300 hover:bg-orange-500/25 cursor-pointer">Tao session moi</button>'
+        + '<button type="button" onclick="event.stopPropagation(); refreshOpenCodeStatus()" class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] cursor-pointer">Refresh</button>'
+        + '</div>';
+    }
+
+    async function refreshOpenCodeStatus() {
+      await loadOpenCodeStatus();
+      renderProviders();
+    }
+
+    async function createOpenCodeSession() {
+      try {
+        const res = await fetch('/api/admin/opencode/session/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'XMITM session ' + new Date().toISOString() })
+        });
+        if (res.status === 404) {
+          throw new Error('Admin server can cu — restart: pnpm start');
+        }
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Tao session that bai');
+        opencodeStatus = data.status;
+        renderProviders();
+        const sid = data.session?.id || data.status?.sessionId || '';
+        showToast(sid ? 'Da tao session: ' + sid.slice(0, 20) + (sid.length > 20 ? '…' : '') : 'Da tao session');
+      } catch (e) {
+        showToast(e.message || 'Tao session that bai', 'error');
+      }
+    }
+
     function renderOpenCodeStatus(isActive) {
       const s = opencodeStatus || {};
       if (!isActive) {
-        return '<div class="mb-3 text-[10px] text-slate-600 italic">Bat radio/switch de start opencode serve + session</div>';
+        return ''
+          + '<div class="mb-2 text-[10px] text-slate-600 italic">Login tu OpenCode, bat switch, hoac bam Tao session moi.</div>'
+          + openCodeActionButtons();
       }
       const running = s.running ? '<span class="text-emerald-400 font-bold">RUNNING</span>' : '<span class="text-rose-400 font-bold">STOPPED</span>';
       return ''
-        + '<div class="mb-3 rounded-lg border border-orange-500/20 bg-orange-500/5 px-3 py-2 text-[10px] text-slate-400 space-y-1">'
+        + '<div class="mb-2 rounded-lg border border-orange-500/20 bg-orange-500/5 px-3 py-2 text-[10px] text-slate-400 space-y-1">'
         + '<div><span class="text-slate-500">Serve:</span> ' + running + '</div>'
         + '<div><span class="text-slate-500">Session:</span> <span class="font-mono text-orange-300">' + (s.sessionId || '—') + '</span></div>'
         + '<div><span class="text-slate-500">Project:</span> <span class="font-mono break-all">' + (s.projectDir || '—') + '</span></div>'
+        + (s.baseUrl ? '<div><span class="text-slate-500">URL:</span> <span class="font-mono">' + s.baseUrl + '</span></div>' : '')
         + (s.lastError ? '<div class="text-rose-400">' + s.lastError + '</div>' : '')
-        + '</div>';
+        + '</div>'
+        + openCodeActionButtons();
     }
 
     async function setOpenCodeFormat(format) {

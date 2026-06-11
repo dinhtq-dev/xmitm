@@ -1,6 +1,8 @@
 {
   "cli": {
-    "gpt-import-test": "claude-3-5-sonnet"
+    "antigravity": "antigravity",
+    "gpt-4": "deepseek-v4-flash",
+    "gpt-4o": "deepseek-v4-flash"
   },
   "antigravity": {
     "gemini-default": "antigravity",

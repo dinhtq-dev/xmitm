@@ -318,13 +318,6 @@ async function handleRequest(req, res) {
       return passthrough(req, res, bodyBuffer);
     }
     
-    if (tool === "cursor") {
-      log(`[DEBUG] Intercepting Cursor: url=${req.url}`);
-      entry.tool = "cursor";
-      entry.action = "intercepted";
-      return handlers[tool].intercept(req, res, bodyBuffer, null, passthrough);
-    }
-
     const model = extractModel(req.url, bodyBuffer);
     const mappedModel = getMappedModel(tool, model);
     
@@ -335,9 +328,16 @@ async function handleRequest(req, res) {
     entry.mappedModel = mappedModel;
     entry.action = mappedModel ? "intercepted" : "passthrough";
 
-    if (!mappedModel) {
+    if (!mappedModel && tool !== "cursor") {
       log(`[DEBUG] Passthrough (No mapping found for ${model})`);
       return passthrough(req, res, bodyBuffer);
+    }
+
+    if (tool === "cursor") {
+      log(`[DEBUG] Intercepting Cursor: url=${req.url} model=${model || "-"} mapped=${mappedModel || "-"}`);
+      entry.tool = "cursor";
+      entry.action = mappedModel ? "intercepted" : "intercepted-unmapped";
+      return handlers[tool].intercept(req, res, bodyBuffer, mappedModel, passthrough);
     }
 
     log(`[DEBUG] Intercepting ${tool}: mapped ${model} -> ${mappedModel}`);

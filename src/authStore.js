@@ -53,6 +53,16 @@ function defaultStore() {
     clientKeys: [],
     proxies: [],
     dns: {},
+    converters: {
+      apiProxyClient: null,
+      activeClient: null,
+      codex: { request: false, response: false },
+      claude: { request: false, response: false },
+      kiro: { request: false, response: false },
+      antigravity: { request: false, response: false },
+      cursor: { request: false, response: false },
+      copilot: { request: false, response: false },
+    },
   };
 }
 
@@ -82,6 +92,9 @@ function normalizeStore(raw) {
     clientKeys: Array.isArray(raw?.clientKeys) ? raw.clientKeys : [],
     proxies: Array.isArray(raw?.proxies) ? raw.proxies : [],
     dns: raw?.dns && typeof raw.dns === "object" ? { ...raw.dns } : {},
+    converters: raw?.converters && typeof raw.converters === "object"
+      ? { ...defaultStore().converters, ...raw.converters }
+      : { ...defaultStore().converters },
   };
 
   if (raw?.providers && typeof raw.providers === "object") {

@@ -9,6 +9,21 @@ const { loadProviders, saveProviders, loadAuthStore, rotateOAuthConnection, vali
 const { ensureFreshConnection } = require("./oauth/flow");
 const { getProviderMeta } = require("./providerMeta");
 const { getMitmAlias } = require("./dbReader");
+const {
+  buildClientContext,
+  buildProviderContext,
+  syncBodyBuffer,
+  runClientRequest,
+  runProviderRequest,
+  transformProviderResponseChunk,
+  transformClientResponseChunk,
+  getProviderConverter,
+  getApiProxyClient,
+  applyBufferedConverters,
+  applyFakeModelResponse,
+  isStreamingContentType,
+  pipeProxyResponse,
+} = require("./converters");
 
 const AUTH_BUILDERS = {
   anthropic: (key) => ({ "x-api-key": key, "anthropic-version": "2023-06-01" }),
@@ -82,6 +97,53 @@ function rotateKey(providerId) {
   log(`🔄 Key rotated for ${providerId} — now using key ending ...${provider.keys[0].slice(-6)}`);
 }
 
+function extractRequestedModel(bodyBuffer) {
+  if (!bodyBuffer?.length) return null;
+  try {
+    const body = JSON.parse(bodyBuffer.toString());
+    return body.model || null;
+  } catch {
+    return null;
+  }
+}
+
+function applyCliModelMapping(bodyBuffer, req) {
+  if (!bodyBuffer?.length || req.method !== "POST") return bodyBuffer;
+  try {
+    const cliAliases = getMitmAlias("cli") || {};
+    const body = JSON.parse(bodyBuffer.toString());
+    if (body.model && cliAliases[body.model]) {
+      const originalModel = body.model;
+      body.model = cliAliases[body.model];
+      log(`🔁 [CLI Mapping] model: "${originalModel}" → "${body.model}"`);
+      return Buffer.from(JSON.stringify(body));
+    }
+  } catch { /* non-JSON */ }
+  return bodyBuffer;
+}
+
+async function buildApiProxyClientCtx(req, bodyBuffer, requestedModel = null) {
+  const apiClient = getApiProxyClient();
+  if (!apiClient || !bodyBuffer?.length || req.method !== "POST") return null;
+  try {
+    let clientCtx = buildClientContext({
+      clientTool: apiClient,
+      req,
+      bodyBuffer,
+      mappedModel: null,
+      meta: {
+        via: "apiProxy",
+        requestedModel: requestedModel || extractRequestedModel(bodyBuffer),
+      },
+    });
+    clientCtx = await runClientRequest(clientCtx);
+    return syncBodyBuffer(clientCtx);
+  } catch (e) {
+    err(`[CustomAPI] client converter (${apiClient}) failed: ${e.message}`);
+    return null;
+  }
+}
+
 function rotateAuth(providerId, authType) {
   if (authType === "oauth") {
     if (rotateOAuthConnection(providerId)) {
@@ -147,14 +209,24 @@ async function forwardRequest(req, res, bodyBuffer) {
       }));
       return;
     }
-    // Forward directly to API Endpoint
+
+    const requestedModel = extractRequestedModel(bodyBuffer);
+    let finalBodyBuffer = applyCliModelMapping(bodyBuffer, req);
+    const cliClientCtx = await buildApiProxyClientCtx(req, finalBodyBuffer, requestedModel);
+    if (cliClientCtx) {
+      finalBodyBuffer = cliClientCtx.bodyBuffer;
+      log(`[CustomAPI] client=${cliClientCtx.clientTool} → 9router (auto res, fake model="${requestedModel || "?"}")`);
+    } else if (getApiProxyClient()) {
+      log(`[CustomAPI] client=${getApiProxyClient()} configured but ctx build skipped`);
+    }
+
     const targetUrl = routerBase + req.url;
     log(`🔀 [Router] ${req.method} ${req.url} → API Endpoint (${routerBase}) [fallback]`);
     const headers = { ...req.headers };
     delete headers.host;
     delete headers["content-length"];
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
-    if (bodyBuffer && bodyBuffer.length > 0) headers["content-length"] = bodyBuffer.length;
+    if (finalBodyBuffer?.length) headers["content-length"] = finalBodyBuffer.length;
 
     const parsed = new URL(targetUrl);
     const isHttps = parsed.protocol === "https:";
@@ -168,10 +240,7 @@ async function forwardRequest(req, res, bodyBuffer) {
       timeout: 120000,
     };
     const proxyReq = transport.request(opts, (proxyRes) => {
-      const resHeaders = { ...proxyRes.headers };
-      delete resHeaders["transfer-encoding"];
-      res.writeHead(proxyRes.statusCode, resHeaders);
-      proxyRes.pipe(res);
+      pipeProxyResponse(proxyRes, res, { clientCtx: cliClientCtx, requestedModel });
     });
     proxyReq.on("error", (e) => {
       err(`[Router] API Endpoint fallback error: ${e.message}`);
@@ -187,7 +256,7 @@ async function forwardRequest(req, res, bodyBuffer) {
         res.end(JSON.stringify({ error: { message: "API Endpoint request timed out", type: "timeout_error" } }));
       }
     });
-    if (bodyBuffer?.length) proxyReq.write(bodyBuffer);
+    if (finalBodyBuffer?.length) proxyReq.write(finalBodyBuffer);
     proxyReq.end();
     return;
   }
@@ -253,19 +322,38 @@ async function forwardRequest(req, res, bodyBuffer) {
     }
   }
 
-  // Apply CLI model mapping (aliases.json → "cli" section)
-  let finalBodyBuffer = bodyBuffer;
-  if (bodyBuffer && bodyBuffer.length > 0 && req.method === "POST") {
+  const requestedModel = extractRequestedModel(bodyBuffer);
+  let finalBodyBuffer = applyCliModelMapping(bodyBuffer, req);
+
+  const cliClientCtx = await buildApiProxyClientCtx(req, finalBodyBuffer, requestedModel);
+  if (cliClientCtx) {
+    finalBodyBuffer = cliClientCtx.bodyBuffer;
+    log(`[CustomAPI] client=${cliClientCtx.clientTool} → provider=${active.id} (auto res, fake model="${requestedModel || "?"}")`);
+  }
+
+  // Provider request converter (OpenAI ↔ Anthropic ↔ Gemini …)
+  let providerCtx = null;
+  if (finalBodyBuffer?.length > 0 && req.method === "POST") {
     try {
-      const cliAliases = getMitmAlias("cli") || {};
-      const body = JSON.parse(bodyBuffer.toString());
-      if (body.model && cliAliases[body.model]) {
-        const originalModel = body.model;
-        body.model = cliAliases[body.model];
-        log(`🔁 [CLI Mapping] model: "${originalModel}" → "${body.model}"`);
-        finalBodyBuffer = Buffer.from(JSON.stringify(body));
-      }
-    } catch { /* non-JSON body — skip */ }
+      providerCtx = buildProviderContext({
+        providerId: active.id,
+        req,
+        bodyBuffer: finalBodyBuffer,
+        reqPath,
+        active,
+      });
+      providerCtx = await runProviderRequest(providerCtx);
+      providerCtx = syncBodyBuffer(providerCtx);
+      finalBodyBuffer = providerCtx.bodyBuffer;
+      if (providerCtx.reqPath) reqPath = providerCtx.reqPath;
+    } catch (e) {
+      err(`[Router] Provider request converter failed: ${e.message}`);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        error: { message: `Provider converter error: ${e.message}`, type: "converter_error" },
+      }));
+      return;
+    }
   }
 
   const targetUrl = new URL(active.baseUrl + reqPath);
@@ -305,12 +393,78 @@ async function forwardRequest(req, res, bodyBuffer) {
   log(`🔀 [Router] ${req.method} ${req.url} → ${active.id} (${targetUrl.hostname}${reqPath}) [${authHint}]`);
 
   const proxyReq = transport.request(options, (proxyRes) => {
-    const resHeaders = { ...proxyRes.headers };
-    delete resHeaders["transfer-encoding"];
-    res.writeHead(proxyRes.statusCode, resHeaders);
-    proxyRes.pipe(res);
-    proxyRes.on("end", () => {
+    const ct = proxyRes.headers["content-type"] || "";
+    const isStream = isStreamingContentType(ct);
+    const providerConverter = providerCtx ? getProviderConverter(providerCtx.providerId) : null;
+    const hasProviderStream = providerConverter && typeof providerConverter.transformProviderStream === "function";
+    const needsBufferedConvert = !isStream && (providerCtx || cliClientCtx || requestedModel);
+
+    const finish = () => {
       if (active.totalKeys > 1) rotateAuth(active.id, active.authType);
+    };
+
+    if (needsBufferedConvert) {
+      const chunks = [];
+      proxyRes.on("data", (chunk) => chunks.push(chunk));
+      proxyRes.on("end", async () => {
+        try {
+          const buf = await applyBufferedConverters(Buffer.concat(chunks), {
+            providerCtx: cliClientCtx ? null : (providerCtx
+              ? { ...providerCtx, meta: { ...(providerCtx.meta || {}), contentType: ct } }
+              : null),
+            clientCtx: cliClientCtx
+              ? { ...cliClientCtx, meta: { ...(cliClientCtx.meta || {}), contentType: ct } }
+              : null,
+            requestedModel,
+          });
+          if (!res.headersSent) {
+            const resHeaders = { ...proxyRes.headers };
+            delete resHeaders["transfer-encoding"];
+            res.writeHead(proxyRes.statusCode, resHeaders);
+          }
+          res.end(buf);
+        } catch (e) {
+          err(`[Router] Buffered response convert failed: ${e.message}`);
+          const raw = applyFakeModelResponse(Buffer.concat(chunks), requestedModel);
+          if (!res.writableEnded) res.end(raw);
+        }
+        finish();
+      });
+      proxyRes.on("error", () => {
+        if (!res.writableEnded) res.end();
+        finish();
+      });
+      return;
+    }
+
+    if (isStream && (hasProviderStream || cliClientCtx)) {
+      const resHeaders = { ...proxyRes.headers };
+      delete resHeaders["transfer-encoding"];
+      res.writeHead(proxyRes.statusCode, resHeaders);
+      const streamProviderCtx = providerCtx ? { ...providerCtx, phase: "response" } : null;
+      const streamClientCtx = cliClientCtx ? { ...cliClientCtx, phase: "response" } : null;
+      proxyRes.on("data", (chunk) => {
+        let out = chunk;
+        if (streamProviderCtx) {
+          out = transformProviderResponseChunk(streamProviderCtx, out);
+        }
+        if (streamClientCtx && out != null) {
+          out = transformClientResponseChunk(streamClientCtx, out);
+        }
+        if (out != null) res.write(out);
+      });
+      proxyRes.on("end", () => {
+        res.end();
+        finish();
+      });
+      proxyRes.on("error", () => res.end());
+      return;
+    }
+
+    pipeProxyResponse(proxyRes, res, {
+      clientCtx: cliClientCtx,
+      requestedModel,
+      onFinish: finish,
     });
   });
 

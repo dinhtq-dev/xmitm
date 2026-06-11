@@ -538,6 +538,37 @@ async function forwardChatCompletions(bodyBuffer, responseFormat = "origin") {
   return toOpenAiChatCompletion(reply, body.model);
 }
 
+async function ensureServeRunning() {
+  if (state.running) return getPublicStatus();
+
+  const connections = listOAuthConnections("opencode");
+  if (!connections.length) {
+    throw new Error('Chua import OpenCode. Bam "Login tu OpenCode" truoc.');
+  }
+
+  const cfg = readOpenCodeConfig();
+  if (await reconnectFromConfig()) {
+    return getPublicStatus();
+  }
+
+  await startServe({
+    projectDir: cfg.projectDir,
+    port: cfg.port,
+    hostname: cfg.hostname,
+  });
+  return getPublicStatus();
+}
+
+/** Tao session moi — tu dong start serve neu chua chay. */
+async function createNewSession(opts = {}) {
+  await ensureServeRunning();
+  const session = await createSession({
+    title: opts.title || `XMITM session - ${new Date().toISOString()}`,
+  });
+  log(`🦊 [OpenCode] Created session ${session.id}`);
+  return { session, status: getPublicStatus() };
+}
+
 async function activateProvider() {
   const cfg = readOpenCodeConfig();
   const connections = listOAuthConnections("opencode");
@@ -611,6 +642,8 @@ module.exports = {
   startServe,
   stopServe,
   createSession,
+  createNewSession,
+  ensureServeRunning,
   sendMessage,
   listMessages,
   exportSession,

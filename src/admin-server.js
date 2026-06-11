@@ -42,6 +42,15 @@ const { buildAuthorizeUrl, handleCallback, refreshConnection } = require("./oaut
 const { listLocalLoginProviders, importLocalOAuth } = require("./oauth/localImport");
 const { checkAllProviders, checkProviderKeyAtIndex, clearQuotaCache } = require("./providerQuota");
 const opencodeSession = require("./opencode/sessionProvider");
+const {
+  loadConverterToggles,
+  saveConverterToggles,
+  setApiProxyClient,
+  getApiProxyClient,
+  listApiProxyMeta,
+  TOGGLES_FILE,
+  CLIENT_TOOLS,
+} = require("./converters");
 
 // Initialize log store at startup
 initLogStore();
@@ -531,7 +540,10 @@ async function handleRequest(req, res) {
     // ── Serve admin.html ──────────────────────────────────────────
     if (pathname === "/" || pathname === "/admin") {
       const html = fs.readFileSync(path.join(__dirname, "admin.html"), "utf8");
-      res.writeHead(200, { "Content-Type": "text/html" });
+      res.writeHead(200, {
+        "Content-Type": "text/html",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      });
       res.end(html);
       return;
     }
@@ -658,6 +670,77 @@ async function handleRequest(req, res) {
       return;
     }
 
+    // ── Converter — một active client (native REQ+RES) ─────────────
+    if (pathname === "/api/admin/converters" && req.method === "GET") {
+      const toggles = loadConverterToggles();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        success: true,
+        clients: CLIENT_TOOLS,
+        meta: listApiProxyMeta(),
+        toggles,
+        apiProxyClient: getApiProxyClient(),
+        activeClient: getApiProxyClient(),
+        configFile: TOGGLES_FILE,
+      }));
+      return;
+    }
+
+    if (pathname === "/api/admin/converters/activate" && req.method === "POST") {
+      const bodyBuffer = await collectBodyRaw(req);
+      try {
+        const { client } = JSON.parse(bodyBuffer.toString());
+        const toggles = setApiProxyClient(client || null);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          success: true,
+          toggles,
+          apiProxyClient: toggles.apiProxyClient || null,
+          activeClient: toggles.apiProxyClient || null,
+        }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
+    if (pathname === "/api/admin/converters/toggle" && req.method === "POST") {
+      const bodyBuffer = await collectBodyRaw(req);
+      try {
+        const { client, enabled } = JSON.parse(bodyBuffer.toString());
+        const toggles = enabled ? setApiProxyClient(client) : setApiProxyClient(null);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          success: true,
+          toggles,
+          apiProxyClient: toggles.apiProxyClient || null,
+          activeClient: toggles.apiProxyClient || null,
+        }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
+    if (pathname === "/api/admin/converters" && req.method === "POST") {
+      const bodyBuffer = await collectBodyRaw(req);
+      try {
+        const incoming = JSON.parse(bodyBuffer.toString());
+        const toggles = saveConverterToggles(incoming.toggles || incoming);
+        const store = loadAuthStore();
+        store.converters = toggles;
+        saveAuthStore(store);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, toggles, configFile: TOGGLES_FILE }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
     // ── DNS Toggle ────────────────────────────────────────────────
     if (pathname === "/api/admin/dns/toggle" && req.method === "POST") {
       const bodyBuffer = await collectBodyRaw(req);
@@ -688,10 +771,13 @@ async function handleRequest(req, res) {
       const bodyBuffer = await collectBodyRaw(req);
       try {
         const { mappings } = JSON.parse(bodyBuffer.toString());
+        if (!mappings || typeof mappings !== "object" || Array.isArray(mappings)) {
+          throw new Error("Invalid mappings payload");
+        }
         const aliasFile = path.join(__dirname, "..", "aliases.json");
         fs.writeFileSync(aliasFile, JSON.stringify(mappings, null, 2), "utf8");
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true }));
+        res.end(JSON.stringify({ success: true, file: aliasFile }));
       } catch (e) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: false, error: e.message }));
@@ -1145,6 +1231,26 @@ async function handleRequest(req, res) {
     if (pathname === "/api/admin/opencode/status" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: true, status: opencodeSession.getPublicStatus() }));
+      return;
+    }
+
+    if (pathname === "/api/admin/opencode/session/create" && req.method === "POST") {
+      const bodyBuffer = await collectBodyRaw(req);
+      try {
+        const incoming = JSON.parse(bodyBuffer.toString() || "{}");
+        const result = await opencodeSession.createNewSession({
+          title: incoming.title || undefined,
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          success: true,
+          session: result.session,
+          status: result.status,
+        }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
       return;
     }
 

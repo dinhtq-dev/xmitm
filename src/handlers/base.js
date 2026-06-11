@@ -1,4 +1,13 @@
 const { log, err } = require("../logger");
+const {
+  buildClientContext,
+  syncBodyBuffer,
+  runClientRequest,
+  runClientResponse,
+  transformClientResponseChunk,
+  parseJsonBody,
+} = require("../converters");
+const { isStreamingContentType } = require("../converters/responsePipe");
 
 const DEFAULT_LOCAL_ROUTER = "http://localhost:20128";
 const ROUTER_BASE = String(process.env.MITM_ROUTER_BASE || DEFAULT_LOCAL_ROUTER)
@@ -80,6 +89,15 @@ function sanitizeTools(body) {
 }
 
 /**
+ * Run client-tool request converter pipeline (IDE native → router/canonical).
+ */
+async function prepareClientRequest(clientTool, req, bodyBuffer, mappedModel, meta = {}) {
+  let ctx = buildClientContext({ clientTool, req, bodyBuffer, mappedModel, meta });
+  ctx = await runClientRequest(ctx);
+  return syncBodyBuffer(ctx);
+}
+
+/**
  * Send body to 9Router at the given path and return the fetch Response object.
  * Optionally forwards client headers (stripped of hop-by-hop / overridden keys).
  */
@@ -105,22 +123,60 @@ async function fetchRouter(openaiBody, path = "/v1/chat/completions", clientHead
   return response;
 }
 
+async function finishBufferedClientResponse(buf, res, dumper, converterCtx) {
+  let out = Buffer.isBuffer(buf) ? buf : Buffer.from(buf || "");
+  if (converterCtx) {
+    let ctx = {
+      ...converterCtx,
+      phase: "response",
+      bodyBuffer: out,
+      body: parseJsonBody(out),
+      meta: {
+        ...(converterCtx.meta || {}),
+        contentType: converterCtx.meta?.contentType || "application/json",
+      },
+    };
+    ctx = await runClientResponse(ctx);
+    out = ctx.bodyBuffer || out;
+  }
+  if (dumper) { dumper.writeChunk(out); dumper.end(); }
+  res.end(out);
+}
+
 /**
- * Pipe SSE stream from router directly to client response.
- * Optional dumper tees the stream into a debug file.
+ * Pipe router response to client — auto convert buffered JSON or stream chunks.
  */
-async function pipeSSE(routerRes, res, dumper) {
+async function pipeSSE(routerRes, res, dumper, converterCtx = null) {
   const ct = routerRes.headers.get("content-type") || "application/json";
   const status = routerRes.status || 200;
+  const isStream = isStreamingContentType(ct);
   const resHeaders = { "Content-Type": ct, "Cache-Control": "no-cache", "Connection": "keep-alive" };
-  if (ct.includes("text/event-stream")) resHeaders["X-Accel-Buffering"] = "no";
+  if (isStream) resHeaders["X-Accel-Buffering"] = "no";
   res.writeHead(status, resHeaders);
   if (dumper) dumper.writeHeader(routerRes.status, Object.fromEntries(routerRes.headers));
 
+  if (converterCtx) {
+    converterCtx.meta = {
+      ...(converterCtx.meta || {}),
+      contentType: ct,
+    };
+  }
+
   if (!routerRes.body) {
     const text = await routerRes.text().catch(() => "");
-    if (dumper) { dumper.writeChunk(text); dumper.end(); }
-    res.end(text);
+    await finishBufferedClientResponse(text, res, dumper, converterCtx);
+    return;
+  }
+
+  if (!isStream) {
+    const reader = routerRes.body.getReader();
+    const chunks = [];
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(Buffer.from(value));
+    }
+    await finishBufferedClientResponse(Buffer.concat(chunks), res, dumper, converterCtx);
     return;
   }
 
@@ -129,9 +185,15 @@ async function pipeSSE(routerRes, res, dumper) {
   while (true) {
     const { done, value } = await reader.read();
     if (done) { if (dumper) dumper.end(); res.end(); break; }
-    if (dumper) dumper.writeChunk(value);
-    res.write(decoder.decode(value, { stream: true }));
+    let out = value;
+    if (converterCtx) {
+      out = transformClientResponseChunk(converterCtx, value);
+      if (out == null) continue;
+    }
+    if (dumper) dumper.writeChunk(out);
+    const chunk = Buffer.isBuffer(out) ? out : Buffer.from(out);
+    res.write(decoder.decode(chunk, { stream: true }));
   }
 }
 
-module.exports = { fetchRouter, pipeSSE };
+module.exports = { prepareClientRequest, fetchRouter, pipeSSE };

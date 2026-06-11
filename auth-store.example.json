@@ -25,7 +25,8 @@
       "baseUrl": "https://cloudcode-pa.googleapis.com",
       "keys": [],
       "enabled": false,
-      "authMode": "oauth"
+      "authMode": "oauth",
+      "projectId": "your-gcp-project-id"
     }
   },
   "oauth": {
