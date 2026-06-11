@@ -28,6 +28,7 @@ const {
   TOOL_HOSTS,
   isSudoAvailable,
   isSudoPasswordRequired,
+  isWinElevationRequired,
   execWithPassword,
 } = require("./dns/dnsConfig");
 const { getMitmAlias } = require("./dbReader");
@@ -85,6 +86,12 @@ let mitmPid = null;        // sudo PID (from spawn)
 let mitmRealPid = null;    // actual node process PID (from health check)
 let cachedSudoPassword = null;
 let mitmStopping = false;  // flag to prevent health check false-positive while stopping
+let mitmRestartTimer = null;
+let mitmRestartAttempts = 0;
+let mitmWasHealthy = false;
+const MITM_RESTART_MAX = 5;
+const MITM_RESTART_COOLDOWN_MS = 5000;
+const MITM_HEALTH_WATCH_MS = 15000;
 
 // ── Utilities ───────────────────────────────────────────────────
 
@@ -174,23 +181,89 @@ async function getMitmStatus() {
   if (mitmStopping) {
     return { running: false, pid: null };
   }
-  if (mitmProcess && !mitmProcess.killed) {
-    return { running: true, pid: mitmPid };
-  }
-  // Fallback: check via health endpoint (for externally running MITM)
+  // Always verify via health — spawn handle can be stale after crash or admin restart
   try {
     const result = await pollMitmHealth(2000);
-    return { running: true, pid: result.pid };
+    if (result?.pid) mitmRealPid = result.pid;
+    return { running: true, pid: result.pid || mitmPid || mitmRealPid };
   } catch {
+    if (mitmProcess && !mitmProcess.killed) {
+      return { running: true, pid: mitmPid };
+    }
     return { running: false, pid: null };
+  }
+}
+
+function clearMitmRestartTimer() {
+  if (mitmRestartTimer) {
+    clearTimeout(mitmRestartTimer);
+    mitmRestartTimer = null;
+  }
+}
+
+function scheduleMitmAutoRestart(reason) {
+  if (mitmStopping || mitmRestartTimer) return;
+  if (mitmRestartAttempts >= MITM_RESTART_MAX) {
+    err(`MITM auto-restart gave up after ${MITM_RESTART_MAX} attempts (${reason})`);
+    return;
+  }
+  mitmRestartAttempts++;
+  const delay = MITM_RESTART_COOLDOWN_MS * mitmRestartAttempts;
+  log(`🔄 MITM stopped unexpectedly (${reason}) — auto-restart in ${delay / 1000}s (${mitmRestartAttempts}/${MITM_RESTART_MAX})`);
+  mitmRestartTimer = setTimeout(async () => {
+    mitmRestartTimer = null;
+    try {
+      await startMitmServer(cachedSudoPassword);
+      mitmRestartAttempts = 0;
+      log("✅ MITM auto-restart succeeded");
+    } catch (e) {
+      err(`MITM auto-restart failed: ${e.message}`);
+      scheduleMitmAutoRestart(e.message);
+    }
+  }, delay);
+}
+
+async function watchMitmHealth() {
+  if (mitmStopping || mitmRestartTimer) return;
+  const hadManagedProcess = mitmProcess || mitmRealPid;
+  if (!hadManagedProcess) return;
+  try {
+    const health = await pollMitmHealth(3000);
+    if (health?.pid) mitmRealPid = health.pid;
+  } catch {
+    if (mitmStopping) return;
+    log("⚠️ MITM health check failed — process may have crashed");
+    mitmProcess = null;
+    mitmPid = null;
+    mitmRealPid = null;
+    if (mitmWasHealthy) {
+      mitmWasHealthy = false;
+      scheduleMitmAutoRestart("health check failed");
+    }
   }
 }
 
 // ── Start MITM Server ──────────────────────────────────────────
 
 async function startMitmServer(sudoPassword) {
+  clearMitmRestartTimer();
+
   if (mitmProcess && !mitmProcess.killed) {
     throw new Error("MITM server is already running");
+  }
+
+  // Reattach if MITM is already listening (e.g. survived admin-server restart)
+  try {
+    const existing = await pollMitmHealth(2000);
+    if (existing?.ok) {
+      mitmRealPid = existing.pid || null;
+      mitmRestartAttempts = 0;
+      mitmWasHealthy = true;
+      log(`✅ MITM already running — reattached (PID: ${mitmRealPid || "unknown"})`);
+      return { running: true, pid: mitmRealPid, reattached: true };
+    }
+  } catch {
+    // Not running — proceed to spawn
   }
 
   const password = sudoPassword || cachedSudoPassword;
@@ -217,14 +290,16 @@ async function startMitmServer(sudoPassword) {
   const serverPath = path.join(__dirname, "server.js");
   log(`🚀 Spawning MITM server: ${serverPath}`);
 
+  const projectRoot = path.join(__dirname, "..");
   if (IS_WIN) {
     mitmProcess = spawn(process.execPath, [serverPath], {
-      detached: false,
+      detached: true,
       windowsHide: true,
-      cwd: os.tmpdir(),
+      cwd: projectRoot,
       stdio: ["ignore", "pipe", "pipe"],
       env: mitmEnv,
     });
+    mitmProcess.unref();
   } else if (isSudoAvailable()) {
     const inlineCmd = [
       `HOME=${shellQuote(os.homedir())}`,
@@ -251,11 +326,12 @@ async function startMitmServer(sudoPassword) {
   } else {
     // No sudo (Docker/minimal env)
     mitmProcess = spawn(process.execPath, [serverPath], {
-      detached: false,
-      cwd: os.tmpdir(),
+      detached: true,
+      cwd: projectRoot,
       stdio: ["ignore", "pipe", "pipe"],
       env: mitmEnv,
     });
+    mitmProcess.unref();
   }
 
   mitmPid = mitmProcess.pid;
@@ -283,12 +359,17 @@ async function startMitmServer(sudoPassword) {
   });
 
   let spawnExitCode = null;
-  mitmProcess.on("exit", (code) => {
+  mitmProcess.on("exit", (code, signal) => {
     spawnExitCode = code;
-    log(`MITM server exited (code: ${code})`);
+    const sig = signal ? `, signal: ${signal}` : "";
+    log(`MITM server exited (code: ${code}${sig})`);
     mitmProcess = null;
     mitmPid = null;
     mitmRealPid = null;
+    if (!mitmStopping && mitmWasHealthy) {
+      mitmWasHealthy = false;
+      scheduleMitmAutoRestart(`exit code ${code}${sig}`);
+    }
   });
 
   // Step 3: Wait for health
@@ -325,8 +406,10 @@ async function startMitmServer(sudoPassword) {
   }
 
   if (password) cachedSudoPassword = password;
-  log(`✅ MITM server healthy (PID: ${mitmPid})`);
-  return { running: true, pid: mitmPid };
+  mitmRestartAttempts = 0;
+  mitmWasHealthy = true;
+  log(`✅ MITM server healthy (PID: ${mitmRealPid || mitmPid})`);
+  return { running: true, pid: mitmRealPid || mitmPid };
 }
 
 // ── Stop MITM Server ───────────────────────────────────────────
@@ -334,6 +417,9 @@ async function startMitmServer(sudoPassword) {
 async function stopMitmServer(sudoPassword) {
   const password = sudoPassword || cachedSudoPassword;
   mitmStopping = true;
+  clearMitmRestartTimer();
+  mitmRestartAttempts = 0;
+  mitmWasHealthy = false;
 
   // ── Step 1: Kill actual node process via sudo (it runs as root) ──
   if (mitmRealPid) {
@@ -519,6 +605,7 @@ async function handleRequest(req, res) {
           dns,
           mappings,
           sudoRequired: isSudoPasswordRequired(),
+          dnsElevationRequired: isWinElevationRequired(),
           sudoCached: !!cachedSudoPassword,
           version: currentVersion,
           latestVersion,
@@ -1147,3 +1234,15 @@ const shutdown = async () => {
 };
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
+
+setInterval(() => {
+  watchMitmHealth().catch(() => {});
+}, MITM_HEALTH_WATCH_MS);
+
+process.on("uncaughtException", (e) => {
+  err(`Uncaught exception in admin server (keeping alive): ${e.message}`);
+});
+process.on("unhandledRejection", (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  err(`Unhandled rejection in admin server (keeping alive): ${msg}`);
+});

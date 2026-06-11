@@ -379,6 +379,8 @@ function killPort(port) {
   }
 }
 
+let serversListening = false;
+
 async function startServer() {
   const rootKeyPath = path.join(MITM_DIR, "rootCA.key");
   const rootCertPath = path.join(MITM_DIR, "rootCA.crt");
@@ -431,26 +433,56 @@ async function startServer() {
     process.exit(1);
   }
 
-  server.listen(LOCAL_PORT, () => log(`🚀 Server ready on :${LOCAL_PORT}`));
-  shimServer.listen(HTTP_SHIM_PORT, () => log(`🧩 HTTP shim ready on :${HTTP_SHIM_PORT}`));
+  await new Promise((resolve, reject) => {
+    let pending = 2;
+    const onReady = () => {
+      if (--pending === 0) {
+        serversListening = true;
+        resolve();
+      }
+    };
+    server.once("error", reject);
+    shimServer.once("error", reject);
+    server.listen(LOCAL_PORT, () => { log(`🚀 Server ready on :${LOCAL_PORT}`); onReady(); });
+    shimServer.listen(HTTP_SHIM_PORT, () => { log(`🧩 HTTP shim ready on :${HTTP_SHIM_PORT}`); onReady(); });
+  });
 
-  server.on("error", (e) => {
+  const onListenError = (e) => {
     if (e.code === "EADDRINUSE") err(`Port ${LOCAL_PORT} already in use`);
     else if (e.code === "EACCES") err(`Permission denied for port ${LOCAL_PORT}`);
-    else err(e.message);
-    process.exit(1);
-  });
+    else err(`Server error: ${e.message}`);
+    if (!serversListening) process.exit(1);
+  };
+  server.on("error", onListenError);
+  shimServer.on("error", onListenError);
 
   let isShuttingDown = false;
   const shutdown = () => {
     if (isShuttingDown) return;
     isShuttingDown = true;
     const forceExit = setTimeout(() => process.exit(0), 1500);
-    server.close(() => { clearTimeout(forceExit); process.exit(0); });
+    server.close(() => {
+      shimServer.close(() => {
+        clearTimeout(forceExit);
+        process.exit(0);
+      });
+    });
   };
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);
   if (process.platform === "win32") process.on("SIGBREAK", shutdown);
 }
 
-startServer();
+process.on("uncaughtException", (e) => {
+  err(`Uncaught exception (keeping server alive): ${e.message}`);
+  if (e.stack) err(e.stack);
+});
+process.on("unhandledRejection", (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  err(`Unhandled rejection (keeping server alive): ${msg}`);
+});
+
+startServer().catch((e) => {
+  err(`Fatal startup error: ${e.message}`);
+  process.exit(1);
+});

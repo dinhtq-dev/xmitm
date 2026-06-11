@@ -98,6 +98,99 @@ function normalizeHostsContent(content) {
   return content.replace(/[\r\n\s]+$/g, "") + eol;
 }
 
+function readHostsFile() {
+  try {
+    return fs.readFileSync(HOSTS_FILE, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+/** Parse one hosts line — exact hostname tokens only (no substring matching). */
+function parseHostsLine(line) {
+  let trimmed = line.trim();
+  if (!trimmed) return null;
+  const hashIdx = trimmed.indexOf("#");
+  let comment = "";
+  if (hashIdx >= 0) {
+    comment = trimmed.slice(hashIdx);
+    trimmed = trimmed.slice(0, hashIdx).trim();
+  }
+  if (!trimmed) return { kind: "comment", raw: line };
+  const parts = trimmed.split(/\s+/);
+  if (parts.length < 2) return { kind: "other", raw: line };
+  return { kind: "entry", ip: parts[0], hostnames: parts.slice(1), comment, raw: line };
+}
+
+function hostsFileHasHost(content, host) {
+  for (const line of content.split(/\r?\n/)) {
+    const parsed = parseHostsLine(line);
+    if (parsed?.kind === "entry" && parsed.hostnames.includes(host)) return true;
+  }
+  return false;
+}
+
+function removeHostsFromContent(content, hostsToRemove) {
+  const removeSet = new Set(hostsToRemove);
+  const eol = IS_WIN ? "\r\n" : "\n";
+  const out = [];
+  for (const line of content.split(/\r?\n/)) {
+    const parsed = parseHostsLine(line);
+    if (parsed?.kind !== "entry") {
+      out.push(line);
+      continue;
+    }
+    const kept = parsed.hostnames.filter((h) => !removeSet.has(h));
+    if (kept.length === parsed.hostnames.length) {
+      out.push(line);
+      continue;
+    }
+    if (kept.length === 0) continue;
+    const suffix = parsed.comment ? ` ${parsed.comment}` : "";
+    out.push(`${parsed.ip} ${kept.join(" ")}${suffix}`);
+  }
+  return normalizeHostsContent(out.join(eol));
+}
+
+function appendHosts(content, hosts) {
+  const eol = IS_WIN ? "\r\n" : "\n";
+  const trimmed = content.replace(/[\r\n\s]+$/g, "");
+  const lines = hosts.map((h) => `127.0.0.1 ${h}`);
+  const body = trimmed ? `${trimmed}${eol}${lines.join(eol)}${eol}` : `${lines.join(eol)}${eol}`;
+  return normalizeHostsContent(body);
+}
+
+async function writeHostsContent(newContent, sudoPassword) {
+  const current = readHostsFile();
+  if (newContent === current) return;
+
+  if (IS_WIN) {
+    if (isAdmin()) {
+      atomicWriteHostsWin(HOSTS_FILE, current, newContent);
+      try { execSync("ipconfig /flushdns", { windowsHide: true, stdio: "ignore" }); } catch { /* ignore */ }
+      return;
+    }
+    const tmpPath = path.join(os.tmpdir(), `xmitm-hosts-${Date.now()}.tmp`);
+    fs.writeFileSync(tmpPath, newContent, "utf8");
+    const esc = (s) => String(s).replace(/'/g, "''");
+    await runElevatedPowerShell(
+      `Copy-Item -LiteralPath '${esc(tmpPath)}' -Destination '${esc(HOSTS_FILE)}' -Force; ` +
+      `Remove-Item -LiteralPath '${esc(tmpPath)}' -Force -ErrorAction SilentlyContinue; ` +
+      `ipconfig /flushdns | Out-Null`
+    );
+    try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+    return;
+  }
+
+  const escaped = newContent.replace(/'/g, "'\\''");
+  await execWithPassword(`printf '%s' '${escaped}' | tee ${HOSTS_FILE} > /dev/null`, sudoPassword);
+  await flushDNS(sudoPassword);
+}
+
+function isWinElevationRequired() {
+  return IS_WIN && !isAdmin();
+}
+
 /**
  * Flush DNS cache (macOS/Linux)
  */
@@ -114,30 +207,22 @@ async function flushDNS(sudoPassword) {
  * Check if DNS entry exists for a specific host
  */
 function checkDNSEntry(host = null) {
-  try {
-    const hostsContent = fs.readFileSync(HOSTS_FILE, "utf8");
-    if (host) return hostsContent.includes(host);
-    // Legacy: check all antigravity hosts (backward compat)
-    return TOOL_HOSTS.antigravity.every(h => hostsContent.includes(h));
-  } catch {
-    return false;
-  }
+  const hostsContent = readHostsFile();
+  if (!hostsContent) return false;
+  if (host) return hostsFileHasHost(hostsContent, host);
+  return TOOL_HOSTS.antigravity.every((h) => hostsFileHasHost(hostsContent, h));
 }
 
 /**
  * Check DNS status per tool — returns { [tool]: boolean }
  */
 function checkAllDNSStatus() {
-  try {
-    const hostsContent = fs.readFileSync(HOSTS_FILE, "utf8");
-    const result = {};
-    for (const [tool, hosts] of Object.entries(TOOL_HOSTS)) {
-      result[tool] = hosts.every(h => hostsContent.includes(h));
-    }
-    return result;
-  } catch {
-    return Object.fromEntries(Object.keys(TOOL_HOSTS).map(t => [t, false]));
+  const hostsContent = readHostsFile();
+  const result = {};
+  for (const [tool, hosts] of Object.entries(TOOL_HOSTS)) {
+    result[tool] = hosts.every((h) => hostsFileHasHost(hostsContent, h));
   }
+  return result;
 }
 
 /**
@@ -154,27 +239,17 @@ async function addDNSEntry(tool, sudoPassword) {
   }
 
   try {
-    if (IS_WIN) {
-      // Read → trim → append → atomic write (Node-side, no CLI size limit)
-      const current = fs.readFileSync(HOSTS_FILE, "utf8");
-      const trimmed = current.replace(/[\r\n\s]+$/g, "");
-      const toAppend = entriesToAdd.map(h => `127.0.0.1 ${h}`).join("\r\n");
-      const next = `${trimmed}\r\n${toAppend}\r\n`;
-      atomicWriteHostsWin(HOSTS_FILE, current, next);
-      await runElevatedPowerShell("ipconfig /flushdns | Out-Null");
-    } else {
-      const current = fs.readFileSync(HOSTS_FILE, "utf8");
-      const trimmed = current.replace(/[\r\n\s]+$/g, "");
-      const toAppend = entriesToAdd.map(h => `127.0.0.1 ${h}`).join("\n");
-      const next = `${trimmed}\n${toAppend}\n`;
-      // Use tee via sudo to overwrite atomically — escape single quotes in content
-      const escaped = next.replace(/'/g, "'\\''");
-      await execWithPassword(`printf '%s' '${escaped}' | tee ${HOSTS_FILE} > /dev/null`, sudoPassword);
-      await flushDNS(sudoPassword);
+    const current = readHostsFile();
+    const next = appendHosts(current, entriesToAdd);
+    await writeHostsContent(next, sudoPassword);
+    if (!checkAllDNSStatus()[tool]) {
+      throw new Error("Hosts file was not updated — try running Admin as Administrator or approve UAC");
     }
     log(`🌐 DNS ${tool}: ✅ added ${entriesToAdd.join(", ")}`);
   } catch (error) {
-    const msg = error.message?.includes("incorrect password") ? "Wrong sudo password" : `Failed to add DNS entry: ${error.message}`;
+    const msg = error.message?.includes("incorrect password") ? "Wrong sudo password"
+      : error.message?.includes("canceled") ? "UAC prompt canceled — DNS not changed"
+      : `Failed to add DNS entry: ${error.message}`;
     throw new Error(msg);
   }
 }
@@ -193,23 +268,17 @@ async function removeDNSEntry(tool, sudoPassword) {
   }
 
   try {
-    if (IS_WIN) {
-      const current = fs.readFileSync(HOSTS_FILE, "utf8");
-      const filtered = current.split(/\r?\n/).filter(l => !entriesToRemove.some(h => l.includes(h))).join("\r\n");
-      const next = filtered.replace(/[\r\n\s]+$/g, "") + "\r\n";
-      atomicWriteHostsWin(HOSTS_FILE, current, next);
-      await runElevatedPowerShell("ipconfig /flushdns | Out-Null");
-    } else {
-      const current = fs.readFileSync(HOSTS_FILE, "utf8");
-      const filtered = current.split(/\r?\n/).filter(l => !entriesToRemove.some(h => l.includes(h))).join("\n");
-      const next = filtered.replace(/[\r\n\s]+$/g, "") + "\n";
-      const escaped = next.replace(/'/g, "'\\''");
-      await execWithPassword(`printf '%s' '${escaped}' | tee ${HOSTS_FILE} > /dev/null`, sudoPassword);
-      await flushDNS(sudoPassword);
+    const current = readHostsFile();
+    const next = removeHostsFromContent(current, entriesToRemove);
+    await writeHostsContent(next, sudoPassword);
+    if (checkAllDNSStatus()[tool]) {
+      throw new Error("Hosts file still contains entries — try running Admin as Administrator or approve UAC");
     }
     log(`🌐 DNS ${tool}: ✅ removed ${entriesToRemove.join(", ")}`);
   } catch (error) {
-    const msg = error.message?.includes("incorrect password") ? "Wrong sudo password" : `Failed to remove DNS entry: ${error.message}`;
+    const msg = error.message?.includes("incorrect password") ? "Wrong sudo password"
+      : error.message?.includes("canceled") ? "UAC prompt canceled — DNS not changed"
+      : `Failed to remove DNS entry: ${error.message}`;
     throw new Error(msg);
   }
 }
@@ -235,10 +304,8 @@ function removeAllDNSEntriesSync() {
   try {
     if (!fs.existsSync(HOSTS_FILE)) return;
     const allHosts = Object.values(TOOL_HOSTS).flat();
-    const content = fs.readFileSync(HOSTS_FILE, "utf8");
-    const eol = IS_WIN ? "\r\n" : "\n";
-    const filtered = content.split(/\r?\n/).filter(l => !allHosts.some(h => l.includes(h))).join(eol);
-    const next = filtered.replace(/[\r\n\s]+$/g, "") + eol;
+    const content = readHostsFile();
+    const next = removeHostsFromContent(content, allHosts);
     if (next === content) return;
     fs.writeFileSync(HOSTS_FILE, next, "utf8");
     if (IS_WIN) {
@@ -263,4 +330,5 @@ module.exports = {
   isSudoPasswordRequired,
   checkDNSEntry,
   checkAllDNSStatus,
+  isWinElevationRequired,
 };

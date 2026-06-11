@@ -342,7 +342,7 @@
           </div>
           <div class="mt-5 p-3 rounded-xl bg-orange-500/[0.03] border border-orange-500/10">
             <p class="text-[10px] text-slate-500 leading-relaxed">
-              <span class="text-orange-400 font-bold">Tip:</span> DNS entries persist independently — they stay active even when MITM is stopped. Start MITM first, then enable DNS for the tools you want to intercept.
+              <span class="text-orange-400 font-bold">Tip:</span> DNS entries persist independently — they stay active even when MITM is stopped. On Windows, toggling DNS may show a UAC prompt — approve it or the hosts file will not change. Status reflects the real hosts file, not browser cache.
             </p>
           </div>
         </div>
@@ -641,16 +641,17 @@
   </div>
 
   <script>
-    const DNS_STATE_KEY = 'mitm_dns_state';
-
     let state = {
       pid: null,
       mitmRunning: false,
       dns: {},
       mappings: {},
       sudoRequired: false,
+      dnsElevationRequired: false,
       sudoCached: false
     };
+
+    const dnsToggleBusy = {};
 
     function showToast(text, type = 'success') {
       const toast = document.getElementById('toast');
@@ -706,20 +707,9 @@
       updateToggleButton(running, false);
     }
 
-    // ── DNS State Persistence ──────────────────────────────────
-    function loadDnsState() {
-      try {
-        const saved = localStorage.getItem(DNS_STATE_KEY);
-        if (saved) return JSON.parse(saved);
-      } catch { /* ignore */ }
-      // Default: only antigravity enabled
-      return { antigravity: true, copilot: false, kiro: false, cursor: false };
-    }
-
-    function saveDnsState(dns) {
-      try {
-        localStorage.setItem(DNS_STATE_KEY, JSON.stringify(dns));
-      } catch { /* ignore */ }
+    function setDnsSwitch(tool, checked) {
+      const cb = document.getElementById(`switch-${tool}`);
+      if (cb) cb.checked = checked;
     }
 
     // ── Config ───────────────────────────────────────────────────
@@ -972,11 +962,23 @@
     }
 
     async function toggleDns(tool, enable) {
+      const prev = state.dns[tool] === true;
+      if (dnsToggleBusy[tool]) {
+        setDnsSwitch(tool, prev);
+        return;
+      }
+      dnsToggleBusy[tool] = true;
       try {
         let sudoPassword = null;
         if (state.sudoRequired && !state.sudoCached) {
           sudoPassword = await openSudoModal();
-          if (!sudoPassword) return;
+          if (!sudoPassword) {
+            setDnsSwitch(tool, prev);
+            return;
+          }
+        }
+        if (state.dnsElevationRequired) {
+          showToast(enable ? 'Approving DNS change — confirm UAC if prompted' : 'Disabling DNS — confirm UAC if prompted', 'success');
         }
         const res = await fetch('/api/admin/dns/toggle', {
           method: 'POST',
@@ -986,15 +988,16 @@
         const result = await res.json();
         if (result.success) {
           showToast(`DNS for ${tool} ${enable ? 'ENABLED' : 'DISABLED'}`);
-          // Persist DNS state
-          const currentDns = { ...state.dns, [tool]: enable };
-          saveDnsState(currentDns);
-          loadStatus();
+          await loadStatus();
         } else {
+          setDnsSwitch(tool, prev);
           showToast(result.error || 'Failed to apply DNS settings', 'error');
         }
       } catch (err) {
+        setDnsSwitch(tool, prev);
         showToast('Network error during DNS action', 'error');
+      } finally {
+        dnsToggleBusy[tool] = false;
       }
     }
 
@@ -1510,28 +1513,12 @@
       resumeConsolePoll();
     }
 
-    // Override DNS state with persisted state on load
-    const savedDns = loadDnsState();
-    // We'll apply this after the first status load patches state.dns
-    
     const origLoadStatus = loadStatus;
     loadStatus = async function() {
       try {
         const res = await fetch('/api/admin/status');
         const data = await res.json();
-        state = data;
-        // Merge persisted DNS state over server-reported state (for tools not yet toggled)
-        const saved = loadDnsState();
-        const hasSavedState = Object.keys(saved).length > 0;
-        for (const [tool, enabled] of Object.entries(saved)) {
-          if (data.dns[tool] === undefined) data.dns[tool] = enabled;
-        }
-        // First visit: default all DNS to ON
-        if (!hasSavedState) {
-          for (const tool of ['antigravity', 'copilot', 'kiro', 'cursor']) {
-            data.dns[tool] = true;
-          }
-        }
+        // DNS state always comes from hosts file (server truth)
         state = data;
         updateStatusBadge(data.mitmRunning);
         updateConfigDisabled(data.mitmRunning);
