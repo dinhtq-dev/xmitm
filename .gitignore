@@ -2,12 +2,16 @@
 node_modules/
 .pnpm-store/
 
-# Environment & secrets
+# Environment (deprecated — use data/config.json)
 .env
 .env.*
 !.env.example
 
-# Provider API keys + OAuth tokens (single auth store)
+# Single config DB (secrets)
+config.json
+data/config.json
+
+# Legacy stores (migrated into config.json on first start)
 providers.json
 auth-store.json
 data/auth-store.json

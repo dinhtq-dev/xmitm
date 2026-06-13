@@ -7,18 +7,16 @@ const fs = require("fs");
 const path = require("path");
 const { log, err } = require("../logger");
 const { loadAuthStore, upsertOAuthConnection, listOAuthConnections } = require("../authStore");
+const { getOpencodeSettings } = require("../configStore");
 
-const DEFAULT_PORT = Number(process.env.OPENCODE_SERVE_PORT || 4096);
-const DEFAULT_HOST = process.env.OPENCODE_SERVE_HOST || "127.0.0.1";
-const DEFAULT_PROJECT_DIR = process.env.OPENCODE_PROJECT_DIR || process.cwd();
 const START_TIMEOUT_MS = 30_000;
 const REQUEST_TIMEOUT_MS = 180_000;
 
 let serveProcess = null;
 let state = {
   running: false,
-  port: DEFAULT_PORT,
-  hostname: DEFAULT_HOST,
+  port: getOpencodeSettings().servePort || 4096,
+  hostname: getOpencodeSettings().serveHost || "127.0.0.1",
   projectDir: null,
   sessionId: null,
   baseUrl: null,
@@ -28,9 +26,8 @@ let state = {
 };
 
 function resolveOpencodeBinary() {
-  if (process.env.OPENCODE_BIN && fs.existsSync(process.env.OPENCODE_BIN)) {
-    return process.env.OPENCODE_BIN;
-  }
+  const oc = getOpencodeSettings();
+  if (oc.bin && fs.existsSync(oc.bin)) return oc.bin;
   try {
     return execSync("command -v opencode", { encoding: "utf8" }).trim();
   } catch {
@@ -43,9 +40,11 @@ function sleep(ms) {
 }
 
 function getAuthConfig() {
-  const username = process.env.OPENCODE_SERVER_USERNAME || "opencode";
-  const password = process.env.OPENCODE_SERVER_PASSWORD || "";
-  return { username, password };
+  const oc = getOpencodeSettings();
+  return {
+    username: oc.serverUsername || "opencode",
+    password: oc.serverPassword || "",
+  };
 }
 
 function buildBaseUrl(port = state.port, hostname = state.hostname) {
@@ -142,14 +141,24 @@ function killPort(port) {
   }
 }
 
+function opencodeDefaults() {
+  const oc = getOpencodeSettings();
+  return {
+    projectDir: oc.projectDir || process.cwd(),
+    port: Number(oc.servePort || 4096),
+    hostname: oc.serveHost || "127.0.0.1",
+  };
+}
+
 function readOpenCodeConfig() {
+  const defaults = opencodeDefaults();
   const conn = listOAuthConnections("opencode").find((c) => c.driver === "local") || listOAuthConnections("opencode")[0];
   const extra = conn?.extra && typeof conn.extra === "object" ? conn.extra : {};
   return {
     connectionId: conn?.id || null,
-    projectDir: extra.projectDir || DEFAULT_PROJECT_DIR,
-    port: Number(extra.servePort || DEFAULT_PORT),
-    hostname: extra.serveHostname || DEFAULT_HOST,
+    projectDir: extra.projectDir || defaults.projectDir,
+    port: Number(extra.servePort || defaults.port),
+    hostname: extra.serveHostname || defaults.hostname,
     sessionId: extra.sessionId || null,
     model: extra.model || null,
     agent: extra.agent || "build",
@@ -177,13 +186,14 @@ async function startServe(opts = {}) {
   const binary = resolveOpencodeBinary();
   if (!binary) throw new Error("Khong tim thay opencode CLI trong PATH");
 
-  const projectDir = path.resolve(opts.projectDir || DEFAULT_PROJECT_DIR);
+  const defaults = opencodeDefaults();
+  const projectDir = path.resolve(opts.projectDir || defaults.projectDir);
   if (!fs.existsSync(projectDir)) {
     throw new Error(`Project directory khong ton tai: ${projectDir}`);
   }
 
-  const port = Number(opts.port || DEFAULT_PORT);
-  const hostname = opts.hostname || DEFAULT_HOST;
+  const port = Number(opts.port || defaults.port);
+  const hostname = opts.hostname || defaults.hostname;
 
   if (serveProcess) await stopServe();
 
@@ -371,7 +381,7 @@ async function exportSession(sessionId = state.sessionId) {
     const stdout = execSync(`"${binary}" export ${JSON.stringify(sessionId)}`, {
       encoding: "utf8",
       maxBuffer: 20 * 1024 * 1024,
-      cwd: state.projectDir || DEFAULT_PROJECT_DIR,
+      cwd: state.projectDir || opencodeDefaults().projectDir,
     });
     return JSON.parse(stdout);
   } catch (e) {

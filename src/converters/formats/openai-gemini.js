@@ -2,6 +2,7 @@
  * OpenAI chat.completions ↔ Gemini / Antigravity (Code Assist) wire format.
  */
 const crypto = require("crypto");
+const { getAntigravityProjectId } = require("../../configStore");
 
 function extractText(content) {
   if (typeof content === "string") return content;
@@ -77,7 +78,7 @@ function openAiBodyToAntigravity(body, { project, model, stream = false } = {}) 
   if (tools) request.tools = tools;
 
   return {
-    project: project || process.env.ANTIGRAVITY_PROJECT_ID || "",
+    project: project || getAntigravityProjectId() || "",
     model: model || body.model || "gemini-2.0-flash",
     request,
     userAgent: "antigravity",

@@ -1,41 +1,9 @@
 /**
- * authStore.js — Single file for all keys, OAuth tokens, provider config
- * Path: data/auth-store.json (gitignored via data/)
+ * authStore.js — Provider keys, OAuth tokens — persisted in data/config.json
  */
-const fs = require("fs");
-const path = require("path");
 const crypto = require("crypto");
-const { DATA_DIR } = require("./paths");
 const { defaultProviderEntries, getProviderMeta } = require("./providerMeta");
-
-const LEGACY_PROVIDERS_FILE = path.join(__dirname, "..", "providers.json");
-const FALLBACK_AUTH_STORE_PATH = path.join(__dirname, "..", "auth-store.json");
-
-let _resolvedAuthStorePath = null;
-
-function getAuthStorePath() {
-  if (_resolvedAuthStorePath) return _resolvedAuthStorePath;
-
-  const envPath = String(process.env.AUTH_STORE_PATH || "").trim();
-  if (envPath) {
-    _resolvedAuthStorePath = path.resolve(envPath);
-    return _resolvedAuthStorePath;
-  }
-
-  const primary = path.join(DATA_DIR, "auth-store.json");
-  try {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.accessSync(DATA_DIR, fs.constants.W_OK);
-    _resolvedAuthStorePath = primary;
-  } catch {
-    _resolvedAuthStorePath = FALLBACK_AUTH_STORE_PATH;
-    console.warn(
-      `[authStore] Khong ghi duoc ${DATA_DIR} — dung ${FALLBACK_AUTH_STORE_PATH}. ` +
-      "Dat quyen thu muc data/ hoac AUTH_STORE_PATH trong .env."
-    );
-  }
-  return _resolvedAuthStorePath;
-}
+const { loadConfig, saveConfig, getConfigPath } = require("./configStore");
 
 const STORE_VERSION = 1;
 
@@ -53,16 +21,6 @@ function defaultStore() {
     clientKeys: [],
     proxies: [],
     dns: {},
-    converters: {
-      apiProxyClient: null,
-      activeClient: null,
-      codex: { request: false, response: false },
-      claude: { request: false, response: false },
-      kiro: { request: false, response: false },
-      antigravity: { request: false, response: false },
-      cursor: { request: false, response: false },
-      copilot: { request: false, response: false },
-    },
   };
 }
 
@@ -76,6 +34,7 @@ function normalizeProviderEntry(pid, prov) {
     authMode: authModes.includes(prov?.authMode) ? prov.authMode : authModes[0],
     responseFormat: prov?.responseFormat || "origin",
     proxyId: prov?.proxyId || null,
+    rotateEnabled: prov?.rotateEnabled === true,
   };
 }
 
@@ -92,9 +51,6 @@ function normalizeStore(raw) {
     clientKeys: Array.isArray(raw?.clientKeys) ? raw.clientKeys : [],
     proxies: Array.isArray(raw?.proxies) ? raw.proxies : [],
     dns: raw?.dns && typeof raw.dns === "object" ? { ...raw.dns } : {},
-    converters: raw?.converters && typeof raw.converters === "object"
-      ? { ...defaultStore().converters, ...raw.converters }
-      : { ...defaultStore().converters },
   };
 
   if (raw?.providers && typeof raw.providers === "object") {
@@ -133,63 +89,38 @@ function normalizeStore(raw) {
 }
 
 function migrateLegacyProviders() {
-  if (!fs.existsSync(LEGACY_PROVIDERS_FILE)) return null;
-  try {
-    const legacy = JSON.parse(fs.readFileSync(LEGACY_PROVIDERS_FILE, "utf8"));
-    const store = defaultStore();
-    store.activeProvider = legacy.activeProvider ?? null;
-    if (legacy.providers) {
-      for (const [pid, prov] of Object.entries(legacy.providers)) {
-        store.providers[pid] = normalizeProviderEntry(pid, prov);
-      }
-    }
-    store.updatedAt = nowIso();
-    return store;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
-// ── In-memory cache — invalidated on every write ────────────────
-let _storeCache = null;
+function authSliceFromConfig(cfg) {
+  return {
+    version: cfg.version,
+    updatedAt: cfg.updatedAt,
+    activeProvider: cfg.activeProvider,
+    providers: cfg.providers,
+    oauth: cfg.oauth,
+    clientKeys: cfg.clientKeys,
+    proxies: cfg.proxies,
+    dns: cfg.dns,
+  };
+}
 
 function loadAuthStore() {
-  if (_storeCache) return _storeCache;
-  const storePath = getAuthStorePath();
-  if (fs.existsSync(storePath)) {
-    try {
-      _storeCache = normalizeStore(JSON.parse(fs.readFileSync(storePath, "utf8")));
-      return _storeCache;
-    } catch {
-      return defaultStore();
-    }
-  }
-  const migrated = migrateLegacyProviders();
-  const store = migrated || defaultStore();
-  try {
-    saveAuthStore(store);
-  } catch (e) {
-    console.warn(`[authStore] Khong luu duoc store: ${e.message}`);
-  }
-  return store;
+  const cfg = loadConfig();
+  return normalizeStore(authSliceFromConfig(cfg));
 }
 
 function saveAuthStore(store) {
-  _storeCache = null; // invalidate cache on every write
-  const storePath = getAuthStorePath();
-  const dir = path.dirname(storePath);
-  try {
-    fs.mkdirSync(dir, { recursive: true });
-  } catch { /* ignore */ }
+  const cfg = loadConfig();
   const normalized = normalizeStore(store);
-  normalized.updatedAt = nowIso();
-  try {
-    fs.writeFileSync(storePath, JSON.stringify(normalized, null, 2), "utf8");
-  } catch (e) {
-    throw new Error(`Khong ghi duoc auth store (${storePath}): ${e.message}`);
-  }
-  _storeCache = normalized; // re-populate cache with freshly written value
-  return normalized;
+  cfg.activeProvider = normalized.activeProvider;
+  cfg.providers = normalized.providers;
+  cfg.oauth = normalized.oauth;
+  cfg.clientKeys = normalized.clientKeys;
+  cfg.proxies = normalized.proxies;
+  cfg.dns = normalized.dns;
+  const saved = saveConfig(cfg);
+  return normalizeStore(authSliceFromConfig(saved));
 }
 
 /** Back-compat shape for providerRouter / admin providers API */
@@ -402,7 +333,7 @@ function removeProxy(id) {
 }
 
 module.exports = {
-  getAuthStorePath,
+  getAuthStorePath: getConfigPath,
   STORE_VERSION,
   loadAuthStore,
   saveAuthStore,

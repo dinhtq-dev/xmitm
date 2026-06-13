@@ -1,15 +1,7 @@
 const { err, log } = require("../logger");
 const { getClientConverter, getProviderConverter } = require("./registry");
 const { syncBodyBuffer, parseJsonBody } = require("./context");
-const { isApiProxyConvertEnabled, isMitmConvertEnabled } = require("./toggles");
 const { enrichContextWithDetection } = require("./detectFormat");
-
-function clientConvertEnabled(ctx, phase) {
-  if (ctx?.meta?.via === "apiProxy" || ctx?.meta?.via === "providerRouter") {
-    return isApiProxyConvertEnabled(ctx.clientTool, phase);
-  }
-  return isMitmConvertEnabled(ctx.clientTool, phase);
-}
 
 async function runConverterHook(converter, hookName, ctx, label) {
   if (!converter || typeof converter[hookName] !== "function") return ctx;
@@ -23,23 +15,22 @@ async function runConverterHook(converter, hookName, ctx, label) {
 }
 
 async function runClientRequest(ctx) {
-  if (!clientConvertEnabled(ctx, "request")) return syncBodyBuffer(ctx);
   const converter = getClientConverter(ctx.clientTool);
-  if (!converter) return syncBodyBuffer(ctx);
-  ctx = enrichContextWithDetection(ctx);
-  const fmt = ctx.meta?.detectedRequestFormat || ctx.meta?.nativeFormat || "?";
-  log(`[CustomAPI] req ${ctx.clientTool}: ${fmt}`);
-  return runConverterHook(converter, "convertRequest", ctx, ctx.clientTool);
+  if (converter && typeof converter.convertRequest === "function") {
+    return runConverterHook(converter, "convertRequest", ctx, ctx.clientTool);
+  }
+  if (ctx.mappedModel && ctx.body && ctx.body.model !== undefined) {
+    ctx.body.model = ctx.mappedModel;
+  }
+  return syncBodyBuffer(ctx);
 }
 
 async function runClientResponse(ctx) {
-  if (!clientConvertEnabled(ctx, "response")) return ctx;
   const converter = getClientConverter(ctx.clientTool);
-  if (!converter) return ctx;
-  ctx = enrichContextWithDetection(ctx);
-  const fmt = ctx.meta?.detectedResponseFormat || ctx.meta?.nativeFormat || "?";
-  log(`[CustomAPI] res ${ctx.clientTool}: ${fmt}`);
-  return runConverterHook(converter, "convertResponse", ctx, ctx.clientTool);
+  if (converter && typeof converter.convertResponse === "function") {
+    return runConverterHook(converter, "convertResponse", ctx, ctx.clientTool);
+  }
+  return ctx;
 }
 
 async function runProviderRequest(ctx) {
@@ -62,20 +53,12 @@ async function runProviderResponse(ctx) {
 }
 
 function transformClientResponseChunk(ctx, chunk) {
-  if (!clientConvertEnabled(ctx, "stream")) return chunk;
-  const converter = getClientConverter(ctx.clientTool);
-  if (!converter || typeof converter.transformResponseStream !== "function") return chunk;
-  try {
-    return converter.transformResponseStream(ctx, chunk);
-  } catch (e) {
-    err(`[Converter:${ctx.clientTool}] transformResponseStream: ${e.message}`);
-    return chunk;
-  }
+  return chunk;
 }
 
 function transformProviderResponseChunk(ctx, chunk) {
   const converter = getProviderConverter(ctx.providerId);
-  if (!converter || typeof converter.transformResponseStream !== "function") return chunk;
+  if (!converter || typeof converter.transformProviderStream !== "function") return chunk;
   try {
     return converter.transformProviderStream(ctx, chunk);
   } catch (e) {

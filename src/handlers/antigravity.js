@@ -13,7 +13,8 @@ async function intercept(req, res, bodyBuffer, mappedModel, passthrough) {
     const routerRes = await fetchRouter(
       ctx.body,
       ctx.routerPath || "/v1/chat/completions",
-      ctx.headers || req.headers
+      ctx.headers || req.headers,
+      { reqUrl: req.url }
     );
     await pipeSSE(routerRes, res, dumper, { ...ctx, phase: "response" });
   } catch (error) {

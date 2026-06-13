@@ -1,7 +1,4 @@
-const dotenv = require("dotenv");
-const path = require("path");
-
-dotenv.config({ path: path.join(__dirname, ".env") });
-
 console.log("[XMITM] Starting Admin UI Server...");
+const { initConfig } = require("./src/configStore");
+initConfig();
 require("./src/admin-server");

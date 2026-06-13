@@ -1,6 +1,6 @@
 {
   "cli": {
-    "antigravity": "antigravity",
+    "antigravity": "deepseek-v4-flash",
     "gpt-4": "deepseek-v4-flash",
     "gpt-4o": "deepseek-v4-flash"
   },
@@ -18,15 +18,15 @@
     "gemini-3-flash": "antigravity"
   },
   "copilot": {
-    "gpt-4o": "antigravity",
-    "claude-3-5-sonnet": "antigravity"
+    "gpt-4o": "deepseek-v4-flash",
+    "claude-3-5-sonnet": "deepseek-v4-flash"
   },
   "kiro": {
-    "nova-pro": "antigravity",
-    "default": "antigravity"
+    "nova-pro": "deepseek-v4-flash",
+    "default": "deepseek-v4-flash"
   },
   "cursor": {
-    "gpt-4o": "antigravity",
-    "claude-3-opus": "antigravity"
+    "gpt-4o": "deepseek-v4-flash",
+    "claude-3-opus": "deepseek-v4-flash"
   }
 }

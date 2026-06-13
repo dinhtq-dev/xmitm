@@ -4,8 +4,10 @@ const { createState, consumeState } = require("./state");
 const { exchangeGoogle, refreshGoogle, exchangeGithub } = require("./drivers");
 const { upsertOAuthConnection, getOAuthConnection } = require("../authStore");
 
+const { getOAuthRedirectBase } = require("../configStore");
+
 function getRedirectUri(req) {
-  const base = String(process.env.OAUTH_REDIRECT_BASE || "").trim().replace(/\/+$/, "");
+  const base = getOAuthRedirectBase();
   if (base) return `${base}/api/admin/oauth/callback`;
   const host = req.headers.host || "127.0.0.1:3000";
   return `http://${host}/api/admin/oauth/callback`;

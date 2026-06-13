@@ -2,6 +2,7 @@
  * oauth/registry.js — OAuth driver config per provider (standalone, no 9router)
  */
 const { getProviderMeta } = require("../providerMeta");
+const { getOAuthAppCredentials } = require("../configStore");
 
 const DRIVERS = {
   google: {
@@ -45,14 +46,15 @@ const DRIVERS = {
   },
 };
 
+/** Tạm thời chỉ gemini-cli — các provider OAuth khác đã comment */
 const PROVIDER_OAUTH = {
-  antigravity: { driver: "google", scopes: DRIVERS.google.defaultScopes },
+  // antigravity: { driver: "google", scopes: DRIVERS.google.defaultScopes },
   "gemini-cli": { driver: "google", scopes: DRIVERS.google.defaultScopes },
-  copilot: { driver: "github", scopes: ["read:user", "user:email"] },
-  claude: { driver: "anthropic", scopes: DRIVERS.anthropic.defaultScopes },
-  cursor: { driver: "cursor", scopes: [] },
-  chatgpt: { driver: "local", scopes: [] },
-  opencode: { driver: "local", scopes: [] },
+  // copilot: { driver: "github", scopes: ["read:user", "user:email"] },
+  // claude: { driver: "anthropic", scopes: DRIVERS.anthropic.defaultScopes },
+  // cursor: { driver: "cursor", scopes: [] },
+  // chatgpt: { driver: "local", scopes: [] },
+  // opencode: { driver: "local", scopes: [] },
 };
 
 function getOAuthConfig(providerId) {
@@ -74,15 +76,9 @@ function getDriverCredentials(driverId) {
   const driver = DRIVERS[driverId];
   if (!driver) return { ok: false, error: "Unknown OAuth driver" };
   if (driver.disabled) return { ok: false, error: driver.disabledReason || "OAuth driver disabled" };
-  const clientId = process.env[driver.envClientId]?.trim();
-  const clientSecret = process.env[driver.envClientSecret]?.trim();
-  if (!clientId || !clientSecret) {
-    return {
-      ok: false,
-      error: `Thieu ${driver.envClientId} / ${driver.envClientSecret} trong .env`,
-    };
-  }
-  return { ok: true, clientId, clientSecret, driver };
+  const creds = getOAuthAppCredentials(driverId);
+  if (!creds.ok) return creds;
+  return { ok: true, clientId: creds.clientId, clientSecret: creds.clientSecret, driver };
 }
 
 function listOAuthProvidersPublic() {

@@ -12,6 +12,7 @@ const { DATA_DIR, MITM_DIR } = require("./paths");
 const { getCertForDomain } = require("./cert/generate");
 const { getMitmAlias } = require("./dbReader");
 const { init: initLogStore, addLog } = require("./logStore");
+const { initConfig } = require("./configStore");
 const LOCAL_PORT = 443;
 const HTTP_SHIM_PORT = 20129;
 const IS_WIN = process.platform === "win32";
@@ -21,6 +22,7 @@ let httpsServer; // Reference to main HTTPS server for shutdown/restart
 
 // Clear stale dump files on every MITM start (prevents unbounded disk usage)
 clearDumpDir();
+initConfig();
 initLogStore(); // init request log store
 const INTERNAL_REQUEST_HEADER = { name: "x-request-source", value: "local" };
 

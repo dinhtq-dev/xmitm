@@ -9,6 +9,9 @@ const { URL } = require("url");
 const CACHE_MS = 60000;
 const TIMEOUT_PROBE = 8000;
 
+const { probeGeminiCliOAuthQuota, clearGeminiQuotaCache } = require("./geminiQuota");
+const { listOAuthConnections } = require("./authStore");
+
 const GLM_QUOTA_URLS = {
   international: "https://api.z.ai/api/monitor/usage/quota/limit",
   china: "https://open.bigmodel.cn/api/monitor/usage/quota/limit",
@@ -278,23 +281,81 @@ async function checkProviderKeyAtIndex(providersConfig, providerId, keyIndex) {
   return { index: keyIndex, ...stat };
 }
 
+async function checkOAuthQuota(providerId, connectionId, opts = {}) {
+  const skipCache = opts.skipCache === true;
+  if (providerId === "gemini-cli" || providerId === "antigravity") {
+    return probeGeminiCliOAuthQuota({ connectionId, providerId, skipCache });
+  }
+  return { ok: false, status: "unsupported", label: "Quota OAuth chua ho tro cho " + providerId, source: providerId };
+}
+
+async function checkProviderOAuthAtIndex(providersConfig, providerId, oauthIndex) {
+  const conns = listOAuthConnections(providerId);
+  const conn = conns[oauthIndex];
+  if (!conn) return null;
+  const stat = await checkOAuthQuota(providerId, conn.id, { skipCache: true });
+  return { index: oauthIndex, connectionId: conn.id, label: conn.label || conn.email, ...stat };
+}
+
+async function checkSingleProvider(providersConfig, providerId, opts = {}) {
+  const prov = providersConfig.providers?.[providerId];
+  if (!prov) return null;
+  const skipCache = opts.skipCache === true;
+  const keys = prov.keys || [];
+  const oauthConns = listOAuthConnections(providerId);
+
+  const keyStats = keys.length
+    ? await Promise.all(
+        keys.map((key, i) =>
+          checkProviderQuota(providerId, { baseUrl: prov.baseUrl, key, skipCache }).then((r) => ({ index: i, ...r }))
+        )
+      )
+    : [];
+
+  const oauthStats = oauthConns.length
+    ? await Promise.all(
+        oauthConns.map((c, i) =>
+          checkOAuthQuota(providerId, c.id, { skipCache }).then((r) => ({
+            index: i,
+            connectionId: c.id,
+            label: c.label || c.email || c.id,
+            ...r,
+          }))
+        )
+      )
+    : [];
+
+  let aggregate = { ok: false, label: "Chua co key hoac OAuth" };
+  if (oauthStats.length) {
+    aggregate = oauthStats.find((o) => o.ok) || oauthStats[0];
+  } else if (keyStats.length) {
+    aggregate = keyStats.find((k) => k.ok) || keyStats[0];
+  }
+
+  return { keys: keyStats, oauth: oauthStats, aggregate };
+}
+
 async function checkAllProviders(providersConfig) {
   const providers = providersConfig.providers || {};
   const entries = await Promise.all(
-    Object.entries(providers).map(async ([pid, prov]) => {
-      const keys = prov.keys || [];
-      if (!keys.length) return [pid, { keys: [], aggregate: { ok: false, label: "Chua co key" } }];
-      const keyStats = await Promise.all(
-        keys.map((key, i) => checkProviderQuota(pid, { baseUrl: prov.baseUrl, key }).then((r) => ({ index: i, ...r })))
-      );
-      return [pid, { keys: keyStats, aggregate: keyStats.find((k) => k.ok) || keyStats[0] }];
-    })
+    Object.entries(providers)
+      .filter(([pid, prov]) => (prov.keys || []).length > 0 || listOAuthConnections(pid).length > 0)
+      .map(async ([pid, prov]) => [pid, await checkSingleProvider(providersConfig, pid)])
   );
   return Object.fromEntries(entries);
 }
 
 function clearQuotaCache() {
   cache.clear();
+  clearGeminiQuotaCache();
 }
 
-module.exports = { checkProviderQuota, checkProviderKeyAtIndex, checkAllProviders, clearQuotaCache };
+module.exports = {
+  checkProviderQuota,
+  checkProviderKeyAtIndex,
+  checkOAuthQuota,
+  checkProviderOAuthAtIndex,
+  checkSingleProvider,
+  checkAllProviders,
+  clearQuotaCache,
+};

@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "router": {
+    "mitmRouterBase": "http://localhost:20128",
+    "routerApiKey": ""
+  },
+  "oauthApps": {
+    "redirectBase": "http://127.0.0.1:3000",
+    "google": {
+      "clientId": "",
+      "clientSecret": ""
+    },
+    "github": {
+      "clientId": "",
+      "clientSecret": ""
+    },
+    "anthropic": {
+      "clientId": "",
+      "clientSecret": ""
+    },
+    "cursor": {
+      "clientId": "",
+      "clientSecret": ""
+    }
+  },
+  "system": {
+    "antigravityProjectId": "",
+    "tlsInsecure": false,
+    "opencode": {
+      "bin": "",
+      "apiKey": "",
+      "servePort": 4096,
+      "serveHost": "127.0.0.1",
+      "projectDir": "",
+      "serverUsername": "opencode",
+      "serverPassword": ""
+    }
+  },
+  "activeProvider": null,
+  "providers": {},
+  "oauth": {
+    "connections": []
+  },
+  "clientKeys": [],
+  "proxies": [],
+  "dns": {},
+  "aliases": {
+    "cli": {},
+    "antigravity": {
+      "gemini-default": "gemini-3-flash"
+    },
+    "copilot": {},
+    "kiro": {},
+    "cursor": {}
+  }
+}

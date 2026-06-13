@@ -40,19 +40,22 @@ const { listProviderMeta } = require("./providerMeta");
 const { listOAuthProvidersPublic } = require("./oauth/registry");
 const { buildAuthorizeUrl, handleCallback, refreshConnection } = require("./oauth/flow");
 const { listLocalLoginProviders, importLocalOAuth } = require("./oauth/localImport");
-const { checkAllProviders, checkProviderKeyAtIndex, clearQuotaCache } = require("./providerQuota");
+const { checkAllProviders, checkSingleProvider, checkProviderKeyAtIndex, checkProviderOAuthAtIndex, clearQuotaCache } = require("./providerQuota");
+const { listGeminiCliModels, testGeminiCliModel } = require("./geminiModels");
 const opencodeSession = require("./opencode/sessionProvider");
 const {
-  loadConverterToggles,
-  saveConverterToggles,
-  setApiProxyClient,
-  getApiProxyClient,
-  listApiProxyMeta,
-  TOGGLES_FILE,
-  CLIENT_TOOLS,
-} = require("./converters");
+  initConfig,
+  getRouterConfigForApi,
+  setRouterConfig,
+  setAliases,
+  getAliases,
+  exportFullConfig,
+  importFullConfig,
+  getConfigPath,
+} = require("./configStore");
 
-// Initialize log store at startup
+// Initialize config DB + log store at startup
+initConfig();
 initLogStore();
 
 // Sync stored DNS config with actual hosts file on startup
@@ -127,21 +130,6 @@ function killPortCmd(port) {
   if (IS_LINUX) return `fuser -k ${port}/tcp 2>/dev/null`;
   if (IS_MAC) return `sh -c 'lsof -ti:${port} | xargs kill -9 2>/dev/null || true'`;
   return `fuser -k ${port}/tcp 2>/dev/null || true`;
-}
-
-function readEnv() {
-  const envPath = path.join(__dirname, "..", ".env");
-  try {
-    const text = fs.readFileSync(envPath, "utf-8");
-    const vars = {};
-    for (const line of text.split("\n")) {
-      const m = line.match(/^(MITM_ROUTER_BASE|ROUTER_API_KEY)\s*=\s*(.*)$/);
-      if (m) vars[m[1]] = m[2].trim();
-    }
-    return vars;
-  } catch {
-    return {};
-  }
 }
 
 // ── MITM Health Check ──────────────────────────────────────────
@@ -286,16 +274,11 @@ async function startMitmServer(sudoPassword) {
     }
   }
 
-  // Step 2: Build env for MITM child
-  const envVars = readEnv();
+  // Step 2: Spawn MITM server (reads router config from data/config.json)
   const mitmEnv = {
     ...process.env,
     NODE_ENV: "production",
   };
-  if (envVars.MITM_ROUTER_BASE) mitmEnv.MITM_ROUTER_BASE = envVars.MITM_ROUTER_BASE;
-  if (envVars.ROUTER_API_KEY) mitmEnv.ROUTER_API_KEY = envVars.ROUTER_API_KEY;
-
-  // Step 2: Spawn MITM server
   const serverPath = path.join(__dirname, "server.js");
   log(`🚀 Spawning MITM server: ${serverPath}`);
 
@@ -313,8 +296,6 @@ async function startMitmServer(sudoPassword) {
     const inlineCmd = [
       `HOME=${shellQuote(os.homedir())}`,
       `NODE_ENV=production`,
-      envVars.MITM_ROUTER_BASE ? `MITM_ROUTER_BASE=${shellQuote(envVars.MITM_ROUTER_BASE)}` : "",
-      envVars.ROUTER_API_KEY ? `ROUTER_API_KEY=${shellQuote(envVars.ROUTER_API_KEY)}` : "",
       `exec ${shellQuote(process.execPath)}`,
       shellQuote(serverPath),
     ]
@@ -627,19 +608,10 @@ async function handleRequest(req, res) {
       return;
     }
 
-    // ── Config API (.env) ─────────────────────────────────────────
+    // ── Config API (data/config.json) ─────────────────────────────
     if (pathname === "/api/admin/config" && req.method === "GET") {
-      const envPath = path.join(__dirname, "..", ".env");
-      const envVars = { MITM_ROUTER_BASE: "", ROUTER_API_KEY: "" };
-      try {
-        const text = fs.readFileSync(envPath, "utf-8");
-        for (const line of text.split("\n")) {
-          const m = line.match(/^(MITM_ROUTER_BASE|ROUTER_API_KEY)\s*=\s*(.*)$/);
-          if (m) envVars[m[1]] = m[2].trim();
-        }
-      } catch { /* file missing */ }
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(envVars));
+      res.end(JSON.stringify(getRouterConfigForApi()));
       return;
     }
 
@@ -647,93 +619,12 @@ async function handleRequest(req, res) {
       const bodyBuffer = await collectBodyRaw(req);
       try {
         const { MITM_ROUTER_BASE, ROUTER_API_KEY } = JSON.parse(bodyBuffer.toString());
-        const envPath = path.join(__dirname, "..", ".env");
-        const content = [
-          "# 9Router MITM Server configuration",
-          "",
-          "# The base URL of the 9Router server that this MITM proxy should forward requests to.",
-          `MITM_ROUTER_BASE=${MITM_ROUTER_BASE || ""}`,
-          "",
-          "# The authorization API Key to authenticate requests with 9Router.",
-          `ROUTER_API_KEY=${ROUTER_API_KEY || ""}`,
-          "",
-        ].join("\n");
-        fs.writeFileSync(envPath, content, "utf-8");
-        if (MITM_ROUTER_BASE) process.env.MITM_ROUTER_BASE = MITM_ROUTER_BASE;
-        if (ROUTER_API_KEY) process.env.ROUTER_API_KEY = ROUTER_API_KEY;
+        setRouterConfig({
+          mitmRouterBase: MITM_ROUTER_BASE || "",
+          routerApiKey: ROUTER_API_KEY || "",
+        });
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true }));
-      } catch (e) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-      return;
-    }
-
-    // ── Converter — một active client (native REQ+RES) ─────────────
-    if (pathname === "/api/admin/converters" && req.method === "GET") {
-      const toggles = loadConverterToggles();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({
-        success: true,
-        clients: CLIENT_TOOLS,
-        meta: listApiProxyMeta(),
-        toggles,
-        apiProxyClient: getApiProxyClient(),
-        activeClient: getApiProxyClient(),
-        configFile: TOGGLES_FILE,
-      }));
-      return;
-    }
-
-    if (pathname === "/api/admin/converters/activate" && req.method === "POST") {
-      const bodyBuffer = await collectBodyRaw(req);
-      try {
-        const { client } = JSON.parse(bodyBuffer.toString());
-        const toggles = setApiProxyClient(client || null);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({
-          success: true,
-          toggles,
-          apiProxyClient: toggles.apiProxyClient || null,
-          activeClient: toggles.apiProxyClient || null,
-        }));
-      } catch (e) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-      return;
-    }
-
-    if (pathname === "/api/admin/converters/toggle" && req.method === "POST") {
-      const bodyBuffer = await collectBodyRaw(req);
-      try {
-        const { client, enabled } = JSON.parse(bodyBuffer.toString());
-        const toggles = enabled ? setApiProxyClient(client) : setApiProxyClient(null);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({
-          success: true,
-          toggles,
-          apiProxyClient: toggles.apiProxyClient || null,
-          activeClient: toggles.apiProxyClient || null,
-        }));
-      } catch (e) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-      return;
-    }
-
-    if (pathname === "/api/admin/converters" && req.method === "POST") {
-      const bodyBuffer = await collectBodyRaw(req);
-      try {
-        const incoming = JSON.parse(bodyBuffer.toString());
-        const toggles = saveConverterToggles(incoming.toggles || incoming);
-        const store = loadAuthStore();
-        store.converters = toggles;
-        saveAuthStore(store);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, toggles, configFile: TOGGLES_FILE }));
       } catch (e) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: false, error: e.message }));
@@ -774,10 +665,9 @@ async function handleRequest(req, res) {
         if (!mappings || typeof mappings !== "object" || Array.isArray(mappings)) {
           throw new Error("Invalid mappings payload");
         }
-        const aliasFile = path.join(__dirname, "..", "aliases.json");
-        fs.writeFileSync(aliasFile, JSON.stringify(mappings, null, 2), "utf8");
+        setAliases(mappings);
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, file: aliasFile }));
+        res.end(JSON.stringify({ success: true, file: getConfigPath() }));
       } catch (e) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: false, error: e.message }));
@@ -896,23 +786,11 @@ async function handleRequest(req, res) {
     // ── Full Config Export (all-in-one) ───────────────────────────
     if (pathname === "/api/admin/config/export" && req.method === "GET") {
       try {
-        const authStore = exportBackup();
-        const aliasFile = path.join(__dirname, "..", "aliases.json");
-        const aliases = fs.existsSync(aliasFile)
-          ? JSON.parse(fs.readFileSync(aliasFile, "utf8"))
-          : {};
-        const envVars = readEnv();
         const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
         const fullConfig = {
           _xmitm: true,
-          version: 1,
+          ...exportFullConfig(),
           exportedAt: new Date().toISOString(),
-          env: {
-            MITM_ROUTER_BASE: envVars.MITM_ROUTER_BASE || "",
-            ROUTER_API_KEY: envVars.ROUTER_API_KEY || "",
-          },
-          authStore,
-          aliases,
         };
         res.writeHead(200, {
           "Content-Type": "application/json",
@@ -933,41 +811,10 @@ async function handleRequest(req, res) {
         const incoming = JSON.parse(bodyBuffer.toString());
         if (!incoming._xmitm) throw new Error("Invalid config file — missing _xmitm marker");
 
-        const results = [];
-
-        // 1. Restore auth store (providers + OAuth)
-        if (incoming.authStore) {
-          importBackup(incoming.authStore, { merge: false });
-          results.push("auth-store restored");
-        }
-
-        // 2. Restore aliases (model routing)
-        if (incoming.aliases) {
-          const aliasFile = path.join(__dirname, "..", "aliases.json");
-          fs.writeFileSync(aliasFile, JSON.stringify(incoming.aliases, null, 2), "utf8");
-          results.push("aliases restored");
-        }
-
-        // 3. Restore .env
-        if (incoming.env) {
-          const { MITM_ROUTER_BASE, ROUTER_API_KEY } = incoming.env;
-          const envPath = path.join(__dirname, "..", ".env");
-          const content = [
-            "# 9Router MITM Server configuration",
-            "",
-            `MITM_ROUTER_BASE=${MITM_ROUTER_BASE || ""}`,
-            "",
-            `ROUTER_API_KEY=${ROUTER_API_KEY || ""}`,
-            "",
-          ].join("\n");
-          fs.writeFileSync(envPath, content, "utf-8");
-          if (MITM_ROUTER_BASE) process.env.MITM_ROUTER_BASE = MITM_ROUTER_BASE;
-          if (ROUTER_API_KEY) process.env.ROUTER_API_KEY = ROUTER_API_KEY;
-          results.push("env restored");
-        }
-
+        const merge = url.searchParams.get("merge") === "1";
+        importFullConfig(incoming, { merge });
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, restored: results }));
+        res.end(JSON.stringify({ success: true, restored: ["config.json"] }));
       } catch (e) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: false, error: e.message }));
@@ -1154,9 +1001,132 @@ async function handleRequest(req, res) {
 
     // ── Providers API ─────────────────────────────────────────────
     if (pathname === "/api/admin/providers" && req.method === "GET") {
+      const listModels = url.searchParams.get("models") === "1";
+      const pid = url.searchParams.get("provider") || "gemini-cli";
+      if (listModels) {
+        if (pid !== "gemini-cli") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: false, error: "Models list chi ho tro gemini-cli" }));
+          return;
+        }
+        try {
+          const oauthIndex = parseInt(url.searchParams.get("oauthIndex") || "0", 10) || 0;
+          const refresh = url.searchParams.get("refresh") === "1";
+          const data = await listGeminiCliModels({ providerId: pid, oauthIndex, refresh });
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, ...data }));
+        } catch (e) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+        return;
+      }
       const data = loadProviders();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(data));
+      return;
+    }
+
+    const rotateMatch = pathname.match(/^\/api\/admin\/providers\/([^/]+)\/rotate$/);
+    if (rotateMatch && req.method === "POST") {
+      const pid = decodeURIComponent(rotateMatch[1]);
+      try {
+        const body = JSON.parse((await collectBodyRaw(req)).toString() || "{}");
+        const existing = loadProviders();
+        if (!existing.providers?.[pid]) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: false, error: "Provider not found" }));
+          return;
+        }
+        existing.providers[pid].rotateEnabled = body.enabled === true;
+        saveProviders(existing);
+        const saved = loadProviders();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          success: true,
+          provider: pid,
+          rotateEnabled: saved.providers[pid]?.rotateEnabled === true,
+        }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
+    const modelsListMatch = pathname.match(/^\/api\/admin\/providers\/([^/]+)\/models$/);
+    if (modelsListMatch && req.method === "GET") {
+      const pid = decodeURIComponent(modelsListMatch[1]);
+      if (pid !== "gemini-cli") {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: "Models list chi ho tro gemini-cli" }));
+        return;
+      }
+      try {
+        const oauthIndex = parseInt(url.searchParams.get("oauthIndex") || "0", 10) || 0;
+        const refresh = url.searchParams.get("refresh") === "1";
+        const data = await listGeminiCliModels({ providerId: pid, oauthIndex, refresh });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, ...data }));
+      } catch (e) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
+    const modelsTestMatch = pathname.match(/^\/api\/admin\/providers\/([^/]+)\/models\/test$/);
+    if (modelsTestMatch && req.method === "POST") {
+      const pid = decodeURIComponent(modelsTestMatch[1]);
+      if (pid !== "gemini-cli") {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: "Test model chi ho tro gemini-cli" }));
+        return;
+      }
+      try {
+        const body = JSON.parse((await collectBodyRaw(req)).toString() || "{}");
+        const result = await testGeminiCliModel({
+          providerId: pid,
+          modelId: body.modelId,
+          oauthIndex: Number(body.oauthIndex) || 0,
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: result.ok, ...result }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
+    const modelsAddMatch = pathname.match(/^\/api\/admin\/providers\/([^/]+)\/models\/add$/);
+    if (modelsAddMatch && req.method === "POST") {
+      const pid = decodeURIComponent(modelsAddMatch[1]);
+      if (pid !== "gemini-cli") {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: "Add model chi ho tro gemini-cli" }));
+        return;
+      }
+      try {
+        const body = JSON.parse((await collectBodyRaw(req)).toString() || "{}");
+        const modelId = String(body.modelId || "").trim();
+        const alias = String(body.alias || modelId).trim();
+        if (!modelId) throw new Error("Thieu modelId");
+        const aliases = getAliases();
+        if (!aliases.cli || typeof aliases.cli !== "object") aliases.cli = {};
+        aliases.cli[alias] = modelId;
+        setAliases(aliases);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          success: true,
+          from: alias,
+          to: modelId,
+          cliMappings: aliases.cli,
+        }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
       return;
     }
 
@@ -1164,7 +1134,46 @@ async function handleRequest(req, res) {
       const data = loadProviders();
       const refresh = url.searchParams.get("refresh") === "1";
       const singleProvider = url.searchParams.get("provider");
+      if (url.searchParams.get("models") === "1" && singleProvider === "gemini-cli") {
+        try {
+          const oauthIndex = parseInt(url.searchParams.get("oauthIndex") || "0", 10) || 0;
+          const modelData = await listGeminiCliModels({ providerId: singleProvider, oauthIndex, refresh });
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, ...modelData, cached: !refresh }));
+        } catch (e) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+        return;
+      }
       const keyIndexRaw = url.searchParams.get("index");
+      const oauthIndexRaw = url.searchParams.get("oauthIndex");
+      if (singleProvider && oauthIndexRaw == null && keyIndexRaw == null) {
+        if (refresh) clearQuotaCache();
+        const one = await checkSingleProvider(data, singleProvider, { skipCache: refresh });
+        if (!one) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: false, error: "Provider not found" }));
+          return;
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, provider: singleProvider, ...one, cached: !refresh }));
+        return;
+      }
+      if (refresh && singleProvider && oauthIndexRaw != null) {
+        const oauthIndex = parseInt(oauthIndexRaw, 10);
+        if (!Number.isNaN(oauthIndex)) {
+          const oauthStat = await checkProviderOAuthAtIndex(data, singleProvider, oauthIndex);
+          if (!oauthStat) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ success: false, error: "OAuth connection not found" }));
+            return;
+          }
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, provider: singleProvider, oauth: oauthStat }));
+          return;
+        }
+      }
       if (refresh && singleProvider && keyIndexRaw != null) {
         const keyIndex = parseInt(keyIndexRaw, 10);
         if (!Number.isNaN(keyIndex)) {
@@ -1190,6 +1199,33 @@ async function handleRequest(req, res) {
       const bodyBuffer = await collectBodyRaw(req);
       try {
         const incoming = JSON.parse(bodyBuffer.toString());
+        if (incoming.action === "testModel" && incoming.providerId === "gemini-cli") {
+          const result = await testGeminiCliModel({
+            providerId: incoming.providerId,
+            modelId: incoming.modelId,
+            oauthIndex: Number(incoming.oauthIndex) || 0,
+          });
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: result.ok, ...result }));
+          return;
+        }
+        if (incoming.action === "addModel" && incoming.providerId === "gemini-cli") {
+          const modelId = String(incoming.modelId || "").trim();
+          const alias = String(incoming.alias || modelId).trim();
+          if (!modelId) throw new Error("Thieu modelId");
+          const aliases = getAliases();
+          if (!aliases.cli || typeof aliases.cli !== "object") aliases.cli = {};
+          aliases.cli[alias] = modelId;
+          setAliases(aliases);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            success: true,
+            from: alias,
+            to: modelId,
+            cliMappings: aliases.cli,
+          }));
+          return;
+        }
         const existing = loadProviders();
         const previousActive = existing.activeProvider;
         if (Object.prototype.hasOwnProperty.call(incoming, "activeProvider")) {
@@ -1204,6 +1240,11 @@ async function handleRequest(req, res) {
             if (pdata.baseUrl !== undefined) existing.providers[pid].baseUrl = pdata.baseUrl;
             if (pdata.enabled !== undefined) existing.providers[pid].enabled = pdata.enabled === true;
             if (pdata.responseFormat !== undefined) existing.providers[pid].responseFormat = pdata.responseFormat;
+            if (pdata.proxyId !== undefined) existing.providers[pid].proxyId = pdata.proxyId || null;
+            if (pdata.rotateEnabled !== undefined) {
+              existing.providers[pid].rotateEnabled = pdata.rotateEnabled === true;
+            }
+            if (pdata.authMode !== undefined) existing.providers[pid].authMode = pdata.authMode;
           }
         }
         // Sync enabled flags with activeProvider (only one active)
@@ -1219,8 +1260,9 @@ async function handleRequest(req, res) {
           opencodeStatus = await opencodeSession.syncProviderActivation(previousActive, existing.activeProvider);
         }
 
+        const saved = loadProviders();
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, data: existing, opencode: opencodeStatus }));
+        res.end(JSON.stringify({ success: true, data: saved, opencode: opencodeStatus }));
       } catch (e) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: false, error: e.message }));

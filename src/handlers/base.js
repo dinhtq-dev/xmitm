@@ -8,13 +8,9 @@ const {
   parseJsonBody,
 } = require("../converters");
 const { isStreamingContentType } = require("../converters/responsePipe");
-
-const DEFAULT_LOCAL_ROUTER = "http://localhost:20128";
-const ROUTER_BASE = String(process.env.MITM_ROUTER_BASE || DEFAULT_LOCAL_ROUTER)
-  .trim()
-  .replace(/\/+$/, "")
-  .replace(/\/v1$/i, "") || DEFAULT_LOCAL_ROUTER;
-const API_KEY = process.env.ROUTER_API_KEY;
+const { getRouterConfig } = require("../routerConfig");
+const { getActiveProvider } = require("../providerRouter");
+const { fetchViaActiveProvider } = require("../providerOutbound");
 
 // Headers that must not be forwarded to 9Router
 const STRIP_HEADERS = new Set([
@@ -101,20 +97,27 @@ async function prepareClientRequest(clientTool, req, bodyBuffer, mappedModel, me
  * Send body to 9Router at the given path and return the fetch Response object.
  * Optionally forwards client headers (stripped of hop-by-hop / overridden keys).
  */
-async function fetchRouter(openaiBody, path = "/v1/chat/completions", clientHeaders = {}) {
+async function fetchRouter(openaiBody, path = "/v1/chat/completions", clientHeaders = {}, meta = {}) {
   sanitizeTools(openaiBody);
+
+  const active = getActiveProvider();
+  if (active) {
+    return fetchViaActiveProvider(active, openaiBody, path, clientHeaders, meta);
+  }
 
   const forwarded = {};
   for (const [k, v] of Object.entries(clientHeaders)) {
     if (!STRIP_HEADERS.has(k.toLowerCase())) forwarded[k] = v;
   }
 
-  const response = await fetch(`${ROUTER_BASE}${path}`, {
+  const { routerBase, apiKey } = getRouterConfig();
+  log(`🔀 [MITM] → API Endpoint (${routerBase}) [no active provider]`);
+  const response = await fetch(`${routerBase}${path}`, {
     method: "POST",
     headers: {
       ...forwarded,
       "Content-Type": "application/json",
-      ...(API_KEY && { "Authorization": `Bearer ${API_KEY}` })
+      ...(apiKey && { "Authorization": `Bearer ${apiKey}` })
     },
     body: JSON.stringify(openaiBody)
   });

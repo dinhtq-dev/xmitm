@@ -6,6 +6,7 @@ const path = require("path");
 const { getCredentials } = require("../credentials");
 const { loadAuthStore, saveAuthStore, upsertOAuthConnection, listOAuthConnections } = require("../authStore");
 const { resolveOpencodeBinary } = require("../opencode/sessionProvider");
+const { getOpencodeSettings } = require("../configStore");
 
 function importOpenCodeFromLocal() {
   const creds = getCredentials("opencode");
@@ -26,9 +27,10 @@ function importOpenCodeFromLocal() {
     };
   }
 
+  const oc = getOpencodeSettings();
   const apiKey = creds.accessToken && creds.accessToken !== "local-session"
     ? creds.accessToken
-    : process.env.OPENCODE_API_KEY || "";
+    : oc.apiKey || "";
 
   if (apiKey) {
     const keys = Array.isArray(store.providers.opencode.keys)
@@ -58,8 +60,8 @@ function importOpenCodeFromLocal() {
       importedFrom: "opencode-local",
       binary,
       projectDir,
-      servePort: Number(process.env.OPENCODE_SERVE_PORT || 4096),
-      serveHostname: process.env.OPENCODE_SERVE_HOST || "127.0.0.1",
+      servePort: oc.servePort || 4096,
+      serveHostname: oc.serveHost || "127.0.0.1",
       authPath: creds.paths?.auth || null,
     },
   });

@@ -1,5 +1,6 @@
 const { registerProviderConverter } = require("../registry");
 const { loadProviders } = require("../../authStore");
+const { getAntigravityProjectId } = require("../../configStore");
 const {
   openAiBodyToAntigravity,
   geminiResponseToOpenAi,
@@ -7,7 +8,8 @@ const {
 } = require("../formats/openai-gemini");
 
 function resolveAntigravityProject(providerId) {
-  if (process.env.ANTIGRAVITY_PROJECT_ID) return process.env.ANTIGRAVITY_PROJECT_ID;
+  const fromConfig = getAntigravityProjectId();
+  if (fromConfig) return fromConfig;
   try {
     const cfg = loadProviders();
     const prov = cfg?.providers?.[providerId];
@@ -28,7 +30,7 @@ async function convertAntigravityRequest(ctx) {
   const project = resolveAntigravityProject(ctx.providerId);
   if (!project) {
     throw new Error(
-      "Thiếu Antigravity project ID — thêm providers.antigravity.projectId trong auth-store hoặc ANTIGRAVITY_PROJECT_ID"
+      "Thiếu Antigravity project ID — thêm system.antigravityProjectId trong config.json hoặc providers.*.projectId"
     );
   }
 

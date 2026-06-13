@@ -13,6 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 const { log, err } = require("./logger");
+const { getOpencodeSettings } = require("./configStore");
 
 
 const IS_WIN = process.platform === "win32";
@@ -213,9 +214,8 @@ function getChatGPTCredentials() {
 }
 
 function resolveOpencodeBinaryPath() {
-  if (process.env.OPENCODE_BIN && fs.existsSync(process.env.OPENCODE_BIN)) {
-    return process.env.OPENCODE_BIN;
-  }
+  const oc = getOpencodeSettings();
+  if (oc.bin && fs.existsSync(oc.bin)) return oc.bin;
   try {
     return execSync("command -v opencode", { encoding: "utf8" }).trim();
   } catch {
@@ -224,13 +224,14 @@ function resolveOpencodeBinaryPath() {
 }
 
 function getOpenCodeCredentials() {
+  const oc = getOpencodeSettings();
   const authPath = path.join(HOME, ".local", "share", "opencode", "auth.json");
   const authData = readJsonFile(authPath);
-  const envKey = process.env.OPENCODE_API_KEY || null;
+  const configKey = oc.apiKey || null;
   const fileKey = authData?.key || authData?.apiKey || authData?.token || null;
   const binary = resolveOpencodeBinaryPath();
-  const projectDir = process.env.OPENCODE_PROJECT_DIR || process.cwd();
-  const port = Number(process.env.OPENCODE_SERVE_PORT || 4096);
+  const projectDir = oc.projectDir || process.cwd();
+  const port = Number(oc.servePort || 4096);
 
   if (!binary) {
     return {
@@ -243,13 +244,13 @@ function getOpenCodeCredentials() {
   return {
     provider: "opencode",
     label: "OpenCode Session",
-    accessToken: envKey || fileKey || "local-session",
+    accessToken: configKey || fileKey || "local-session",
     refreshToken: null,
     extra: {
       binary,
       projectDir,
       baseUrl: `http://127.0.0.1:${port}`,
-      hasApiKey: Boolean(envKey || fileKey),
+      hasApiKey: Boolean(configKey || fileKey),
     },
     paths: {
       auth: fs.existsSync(authPath) ? authPath : null,

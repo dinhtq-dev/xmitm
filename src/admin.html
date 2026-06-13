@@ -192,10 +192,6 @@
           <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
           Model Routing Rules
         </button>
-        <button id="tab-converters" onclick="switchTab('converters')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
-          <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-          Req / Res
-        </button>
         <button id="tab-dns" onclick="switchTab('dns')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
           <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           DNS Redirection
@@ -222,7 +218,7 @@
                 <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 <span>API Endpoint Management</span>
               </h2>
-              <p class="text-xs text-slate-500 mt-1">Configure default API Endpoint (MITM_ROUTER_BASE) and Router API key (ROUTER_API_KEY) when providers are disabled.</p>
+              <p class="text-xs text-slate-500 mt-1">Cấu hình API Endpoint — lưu trong <span class="font-mono text-slate-400">data/config.json</span>. Có thể Save khi MITM đang chạy.</p>
             </div>
           </div>
           
@@ -264,24 +260,17 @@
         <!-- Card 2: API Providers & Keys -->
         <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
           <div class="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl"></div>
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-white/[0.03]">
+          <div class="mb-6 pb-5 border-b border-white/[0.03]">
             <div>
               <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
                 <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                 <span>API Providers &amp; Keys</span>
               </h2>
-              <p class="text-xs text-slate-500 mt-1">Keys + OAuth tokens luu chung file <span class="font-mono text-slate-400">auth-store.json</span> (hoac <span class="font-mono text-slate-400">data/auth-store.json</span>)</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 shrink-0">
-              <button type="button" onclick="exportAuthBackup()" class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.04] text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 border border-white/[0.06] cursor-pointer">Export backup</button>
-              <label class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.04] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-white/[0.06] cursor-pointer">
-                Import backup
-                <input type="file" accept="application/json,.json" class="hidden" onchange="importAuthBackupFile(event)" />
-              </label>
+              <p class="text-xs text-slate-500 mt-1">Keys + OAuth tokens lưu trong <span class="font-mono text-slate-400">data/config.json</span> — export/import cấu hình tại <span class="text-slate-400">System Configuration &amp; Backup</span>.</p>
             </div>
           </div>
 
-          <div id="providers-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div id="providers-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <!-- Dynamic provider cards -->
           </div>
         </div>
@@ -324,39 +313,6 @@
           </div>
           <div id="mapping-editor" class="relative z-10 space-y-6 flex-1">
             <!-- Dyn map layout -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab Content: Req/Res Converters -->
-      <div id="panel-converters" class="tab-panel hidden">
-        <div class="glass-card rounded-2xl p-6 shadow-2xl flex flex-col relative overflow-hidden">
-          <div class="absolute -right-12 -top-12 w-48 h-48 bg-violet-500/10 rounded-full blur-3xl"></div>
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-white/[0.03]">
-            <div>
-              <h2 class="text-lg font-bold text-slate-100 flex items-center space-x-2 heading">
-                <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10m0-5h16M20 7v10m0-5H4"></path></svg>
-                <span>Custom API Proxy</span>
-              </h2>
-              <p class="text-xs text-slate-500 mt-1"><code class="text-slate-400">POST localhost:3000/v1</code> — fake model, convert REQ/RES. <strong class="text-violet-300">Không cần MITM.</strong> Chọn format client (Codex/Claude).</p>
-            </div>
-            <button onclick="loadConverters()" class="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 text-xs font-bold rounded-xl border border-white/[0.06] transition cursor-pointer">Refresh</button>
-          </div>
-
-          <div class="hidden sm:grid grid-cols-12 gap-3 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-white/[0.03] mb-3">
-            <div class="col-span-1 text-center">Active</div>
-            <div class="col-span-6">Client format (REQ in / RES out)</div>
-            <div class="col-span-5 text-right">Status</div>
-          </div>
-
-          <div id="converters-list" class="space-y-3">
-            <div class="text-center text-slate-600 py-10 italic text-sm">Loading converter settings…</div>
-          </div>
-
-          <div class="mt-5 p-3 rounded-xl bg-violet-500/[0.03] border border-violet-500/10 space-y-1">
-            <p class="text-[10px] text-slate-500 leading-relaxed">
-              <span class="text-violet-400 font-bold">Auto RES:</span> tự nhận format response (OpenAI/Gemini/Anthropic) và convert về format client đã chọn — không cần biết đi qua 9router hay provider nào. <span class="text-violet-400 font-bold">Postman:</span> <code class="text-slate-400">POST :3000/v1/chat/completions</code> + <code class="text-slate-400">Bearer &lt;client-key&gt;</code>. Config: <code id="converters-config-path" class="text-slate-400">data/converter-toggles.json</code>.
-            </p>
           </div>
         </div>
       </div>
@@ -591,9 +547,7 @@
                   Downloads a single, secure JSON configuration file containing:
                 </p>
                 <ul class="text-[11px] text-slate-400 space-y-1.5 list-disc pl-5 mb-6">
-                  <li>API Providers list and credential keys (`auth-store.json`)</li>
-                  <li>All active model routing &amp; renaming rules (`aliases.json`)</li>
-                  <li>System-level proxy &amp; endpoint parameters (`.env`)</li>
+                  <li>Toàn bộ cấu hình: providers, OAuth, model routing, API endpoint (<code class="text-slate-400">data/config.json</code>)</li>
                 </ul>
               </div>
               <button onclick="exportFullConfig()" class="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-lg glow-orange transition duration-200 cursor-pointer flex items-center justify-center space-x-2 focus:outline-none">
@@ -643,6 +597,13 @@
     Crafted by dinhtq — MITM Promax v1.0 &bull; Secure API interception &amp; model routing
   </footer>
 
+  <!-- Provider Detail Modal -->
+  <div id="provider-modal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200" onclick="if(event.target===this) closeProviderModal()">
+    <div class="glass-card rounded-2xl shadow-2xl max-w-2xl w-full mx-4 border border-white/[0.06] transform scale-95 transition-transform duration-200 max-h-[85vh] flex flex-col">
+      <div id="provider-modal-content" class="p-6 overflow-y-auto flex-1"></div>
+    </div>
+  </div>
+
   <!-- Add Key Modal -->
   <div id="add-key-modal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200" onclick="if(event.target===this) closeAddKeyModal()">
     <div class="glass-card rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 border border-white/[0.06] transform scale-95 transition-transform duration-200">
@@ -673,7 +634,7 @@
   </div>
 
   <!-- Notification Toast -->
-  <div id="toast" class="fixed bottom-6 right-6 px-5 py-3.5 rounded-xl shadow-2xl text-xs font-bold transition duration-300 transform translate-y-20 opacity-0 z-50 flex items-center space-x-2.5">
+  <div id="toast" class="fixed bottom-6 right-6 px-5 py-3.5 rounded-xl shadow-2xl text-xs font-bold transition duration-300 transform translate-y-20 opacity-0 z-[350] flex items-center space-x-2.5">
     <span>Message</span>
   </div>
 
@@ -691,22 +652,11 @@
     const dnsToggleBusy = {};
     let mappingDirty = false;
     const ROUTING_TOOLS = ['cli', 'antigravity', 'copilot', 'kiro', 'cursor'];
-    let converterToggles = {};
-    let converterApiProxyClient = null;
-    let converterMeta = [];
-    let converterConfigPath = '';
-    let converterApiReady = false;
-    const converterToggleBusy = {};
-
-    const FALLBACK_CONVERTER_META = [
-      { id: 'codex', label: 'Codex / OpenAI CLI', icon: '🤖', route: 'Custom API :3000/v1', nativeFormat: 'OpenAI chat.completions', apiProxy: true },
-      { id: 'claude', label: 'Claude Code CLI', icon: '🧠', route: 'Custom API :3000/v1', nativeFormat: 'Anthropic messages', apiProxy: true },
-    ];
 
     function showToast(text, type = 'success') {
       const toast = document.getElementById('toast');
       toast.innerHTML = `<span>${text}</span>`;
-      toast.className = `fixed bottom-6 right-6 px-5 py-3.5 rounded-xl shadow-2xl text-xs font-bold transition duration-300 z-50 flex items-center space-x-2.5 ${
+      toast.className = `fixed bottom-6 right-6 px-5 py-3.5 rounded-xl shadow-2xl text-xs font-bold transition duration-300 z-[350] flex items-center space-x-2.5 ${
         type === 'success' ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white glow-orange' : 'bg-gradient-to-r from-orange-500 to-red-500 text-white glow-orange'
       }`;
       toast.classList.remove('translate-y-20', 'opacity-0');
@@ -762,153 +712,6 @@
       if (cb) cb.checked = checked;
     }
 
-    // ── Req/Res Converters ───────────────────────────────────────
-    function renderConvertersList(opts = {}) {
-      const container = document.getElementById('converters-list');
-      if (!container) return;
-      container.innerHTML = '';
-
-      if (opts.banner) {
-        const banner = document.createElement('div');
-        banner.className = 'mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs leading-relaxed';
-        banner.innerHTML = opts.banner;
-        container.appendChild(banner);
-      }
-
-      const list = converterMeta.length ? converterMeta : FALLBACK_CONVERTER_META;
-      if (!list.length) {
-        container.innerHTML += '<div class="text-center text-slate-600 py-10 italic text-sm">No clients configured.</div>';
-        return;
-      }
-
-      const passthroughRow = document.createElement('div');
-      passthroughRow.className = `grid grid-cols-1 sm:grid-cols-12 gap-4 items-center p-4 rounded-xl border transition cursor-pointer ${!converterApiProxyClient ? 'bg-violet-500/10 border-violet-500/30' : 'bg-white/[0.02] border-white/[0.04] hover:border-white/[0.08]'}`;
-      passthroughRow.onclick = () => activateConverterClient(null);
-      passthroughRow.innerHTML = `
-        <div class="sm:col-span-1 flex justify-center">
-          <input type="radio" name="conv-active-client" class="accent-violet-500 w-4 h-4 cursor-pointer" ${!converterApiProxyClient ? 'checked' : ''}
-            onclick="event.stopPropagation(); activateConverterClient(null)" />
-        </div>
-        <div class="sm:col-span-6 flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-lg bg-slate-500/10 flex items-center justify-center text-lg shrink-0">⏭️</div>
-          <div>
-            <div class="text-sm font-bold text-slate-300">Passthrough</div>
-            <div class="text-[10px] text-slate-600 mt-0.5">Không convert — forward thẳng provider</div>
-          </div>
-        </div>
-        <div class="sm:col-span-5 flex sm:justify-end">
-          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border text-slate-500 bg-white/[0.03] border-white/[0.06]">OFF</span>
-        </div>
-      `;
-      container.appendChild(passthroughRow);
-
-      for (const item of list) {
-        const isActive = converterApiProxyClient === item.id;
-        const row = document.createElement('div');
-        row.className = `grid grid-cols-1 sm:grid-cols-12 gap-4 items-center p-4 rounded-xl border transition cursor-pointer ${isActive ? 'bg-violet-500/10 border-violet-500/30' : 'bg-white/[0.02] border-white/[0.04] hover:border-violet-500/20'}`;
-        row.onclick = () => activateConverterClient(item.id);
-        row.innerHTML = `
-          <div class="sm:col-span-1 flex justify-center">
-            <input type="radio" name="conv-active-client" class="accent-violet-500 w-4 h-4 cursor-pointer" ${isActive ? 'checked' : ''}
-              onclick="event.stopPropagation(); activateConverterClient('${item.id}')" />
-          </div>
-          <div class="sm:col-span-6 flex items-start space-x-3">
-            <div class="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center text-lg shrink-0">${item.icon}</div>
-            <div class="min-w-0">
-              <div class="text-sm font-bold text-slate-200">${item.label}</div>
-              <div class="text-[10px] font-mono text-slate-500 mt-0.5">${item.id}</div>
-              <div class="text-[10px] text-slate-600 mt-1">${item.route} · <span class="text-violet-400/80">${item.nativeFormat}</span></div>
-            </div>
-          </div>
-          <div class="sm:col-span-5 flex sm:justify-end items-center gap-2">
-            ${isActive ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold border text-emerald-400 bg-emerald-500/10 border-emerald-500/20">NATIVE REQ+RES</span>' : '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold border text-slate-600 bg-white/[0.02] border-white/[0.06]">—</span>'}
-          </div>
-        `;
-        container.appendChild(row);
-      }
-    }
-
-    async function loadConverters() {
-      const container = document.getElementById('converters-list');
-      try {
-        const res = await fetch('/api/admin/converters');
-        let data = null;
-        try {
-          data = await res.json();
-        } catch {
-          throw new Error('API không trả JSON — hãy restart admin server');
-        }
-
-        if (res.status === 404) {
-          converterApiReady = false;
-          converterMeta = FALLBACK_CONVERTER_META;
-          converterToggles = {};
-          renderConvertersList({
-            banner: '⚠️ <strong>Admin server đang chạy bản cũ</strong> (thiếu API /api/admin/converters). Chạy lại <code class="text-amber-100">pnpm start</code> để bật/tắt và lưu config. Danh sách bên dưới chỉ xem trước.',
-          });
-          return;
-        }
-
-        if (!res.ok || !data.success) {
-          throw new Error(data?.error || `HTTP ${res.status}`);
-        }
-
-        converterApiReady = true;
-        converterToggles = data.toggles || {};
-        converterApiProxyClient = data.apiProxyClient || data.activeClient || data.toggles?.apiProxyClient || null;
-        converterMeta = (data.meta && data.meta.length) ? data.meta : FALLBACK_CONVERTER_META;
-        if (!data.meta?.length && Array.isArray(data.clients) && data.clients.length) {
-          converterMeta = FALLBACK_CONVERTER_META.filter(m => data.clients.includes(m.id));
-        }
-        converterConfigPath = data.configFile || '';
-        const pathEl = document.getElementById('converters-config-path');
-        if (pathEl && converterConfigPath) pathEl.textContent = converterConfigPath;
-        renderConvertersList();
-      } catch (err) {
-        if (container) {
-          container.innerHTML = `<div class="text-center py-10 px-4"><p class="text-rose-400 text-sm">${err.message}</p><p class="text-slate-500 text-xs mt-3">Restart: <code class="text-slate-400">pnpm start</code></p></div>`;
-        }
-        showToast('Không tải được converter settings: ' + err.message, 'error');
-      }
-    }
-
-    async function activateConverterClient(client) {
-      if (!converterApiReady) {
-        showToast('Restart admin server: pnpm start', 'error');
-        return;
-      }
-      const prev = converterApiProxyClient;
-      if (converterToggleBusy.activate) return;
-      converterToggleBusy.activate = true;
-      try {
-        const res = await fetch('/api/admin/converters/activate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ client: client || null })
-        });
-        const data = await res.json();
-        if (!data.success) {
-          showToast(data.error || 'Failed to save', 'error');
-          return;
-        }
-        converterToggles = data.toggles || converterToggles;
-        converterApiProxyClient = data.apiProxyClient || data.activeClient || null;
-        renderConvertersList();
-        if (client) {
-          const label = converterMeta.find(m => m.id === client)?.label || client;
-          const nf = converterMeta.find(m => m.id === client)?.nativeFormat || '';
-          showToast(`Custom API: ${label} — REQ/RES ${nf}`);
-        } else {
-          showToast('Passthrough — không convert');
-        }
-      } catch (err) {
-        converterApiProxyClient = prev;
-        showToast('Network error saving converter', 'error');
-      } finally {
-        converterToggleBusy.activate = false;
-      }
-    }
-
     // ── Config ───────────────────────────────────────────────────
     let apiKeyVisible = false;
 
@@ -932,23 +735,8 @@
       }
     }
 
-    function updateConfigDisabled(running) {
-      const baseInput = document.getElementById('config-router-base');
-      const keyInput = document.getElementById('config-api-key');
-      const saveBtn = document.getElementById('btn-save-config');
-      const saveMappingsBtn = document.getElementById('btn-save-mappings');
-      [baseInput, keyInput].forEach(el => {
-        if (running) {
-          el.setAttribute('disabled', 'disabled');
-          el.title = 'Disabled while MITM server is running';
-        } else {
-          el.removeAttribute('disabled');
-          el.title = '';
-        }
-      });
-      saveBtn.disabled = running;
-      saveBtn.title = running ? 'Disabled while MITM server is running' : '';
-      // Model routing có thể sửa/lưu khi MITM đang chạy (aliases.json đọc lại mỗi request)
+    function updateConfigDisabled(_running) {
+      // API Endpoint + Model Routing đều hot-reload — không khóa khi MITM chạy
     }
 
     async function saveConfig() {
@@ -1414,20 +1202,25 @@
       }
     }
 
-    // Track expanded status for each tool (first section expanded by default)
+    // Track expanded status — mặc định chỉ mở section đầu (CLI)
     if (window.expandedToolSections === undefined) {
       window.expandedToolSections = {
-        cli: false,
-        antigravity: true,
+        cli: true,
+        antigravity: false,
         copilot: false,
         kiro: false,
-        cursor: false
+        cursor: false,
       };
     }
 
     function toggleSection(tool) {
       if (mappingDirty) syncMappingsFromEditor();
-      window.expandedToolSections[tool] = !window.expandedToolSections[tool];
+      const wasOpen = window.expandedToolSections[tool];
+      const allTools = ['cli', 'antigravity', 'copilot', 'kiro', 'cursor'];
+      for (const t of allTools) {
+        window.expandedToolSections[t] = false;
+      }
+      window.expandedToolSections[tool] = !wasOpen;
       renderMappingsOnly();
     }
 
@@ -1569,9 +1362,6 @@
       }
       if (tab === 'proxy') {
         loadProxyConfigs();
-      }
-      if (tab === 'converters') {
-        loadConverters();
       }
       if (tab === 'routing') {
         bindMappingEditorEvents();
@@ -2007,62 +1797,6 @@
       showToast('Da ngat OAuth');
     }
 
-    async function exportAuthBackup() {
-      try {
-        const res = await fetch('/api/admin/config/export');
-        const blob = await res.blob();
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'xmitm-config-backup.json';
-        a.click();
-        URL.revokeObjectURL(a.href);
-        showToast('Da export full config (providers + routing + env)');
-      } catch {
-        showToast('Export that bai', 'error');
-      }
-    }
-
-    async function importAuthBackupFile(ev) {
-      const file = ev.target.files?.[0];
-      ev.target.value = '';
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const json = JSON.parse(text);
-        // Full config format (_xmitm marker) — use /config/import
-        if (json._xmitm) {
-          const res = await fetch('/api/admin/config/import', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(json),
-          });
-          const data = await res.json();
-          if (!data.success) throw new Error(data.error || 'Import failed');
-          await loadProviders();
-          await loadOAuthConnections();
-          renderProviders();
-          loadConfig();
-          showToast('Import OK: ' + (data.restored || []).join(', '));
-        } else {
-          // Legacy auth-store-only format
-          const merge = confirm('Import MERGE (OK) giu du lieu cu + them moi?\nCancel = REPLACE toan bo auth store.');
-          const res = await fetch('/api/admin/auth/backup/import' + (merge ? '?merge=1' : ''), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(json),
-          });
-          const data = await res.json();
-          if (!data.success) throw new Error(data.error || 'Import failed');
-          await loadProviders();
-          await loadOAuthConnections();
-          renderProviders();
-          showToast(merge ? 'Import merge OK' : 'Import replace OK');
-        }
-      } catch (e) {
-        showToast(e.message || 'Import that bai', 'error');
-      }
-    }
-
     function renderOAuthConnections(pid) {
       const rows = oauthConnections.filter(c => c.provider === pid);
       if (!rows.length) {
@@ -2076,17 +1810,20 @@
             : 'Chua ket noi — bam <span class="text-emerald-400">Login tu Cursor</span> (can mo Cursor IDE da dang nhap)';
           return '<p class="text-[10px] text-slate-500 italic py-1">' + hint + '</p>';
         }
-        const hint = cfg?.configured ? 'Chua co tai khoan — bam Login' : (cfg?.configError || 'Cau hinh OAuth trong .env');
+        const hint = cfg?.configured ? 'Chua co tai khoan — bam Login' : (cfg?.configError || 'Cau hinh OAuth trong config.json (oauthApps)');
         return '<p class="text-[10px] text-slate-500 italic py-1">' + hint + '</p>';
       }
-      return rows.map(c => `
-        <div class="flex items-center justify-between gap-2 rounded-md bg-indigo-500/10 border border-indigo-500/20 px-2 py-1.5">
-          <div class="min-w-0">
-            <div class="text-[10px] font-semibold text-indigo-200 truncate">${c.label || c.email || c.id}</div>
-            <div class="text-[9px] font-mono text-slate-500">${c.tokenPreview || ''}${c.expiresAt ? ' · exp ' + new Date(c.expiresAt).toLocaleDateString('vi-VN') : ''}</div>
+      return '<div class="grid grid-cols-2 gap-2">' + rows.map((c, idx) => `
+        <div class="rounded-md bg-indigo-500/10 border border-indigo-500/20 px-2 py-1.5 space-y-1 min-w-0">
+          <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-[10px] font-semibold text-indigo-200 truncate">${c.label || c.email || c.id}</div>
+              <div class="text-[9px] font-mono text-slate-500 truncate">${c.tokenPreview || ''}${c.expiresAt ? ' · exp ' + new Date(c.expiresAt).toLocaleDateString('vi-VN') : ''}</div>
+            </div>
+            <button type="button" onclick="disconnectOAuth('${c.id}')" class="text-[10px] text-rose-400 hover:text-rose-300 cursor-pointer shrink-0">Ngat</button>
           </div>
-          <button type="button" onclick="disconnectOAuth('${c.id}')" class="text-[10px] text-rose-400 hover:text-rose-300 cursor-pointer shrink-0">Ngat</button>
-        </div>`).join('');
+          ${pid === 'gemini-cli' ? renderOAuthQuotaBar(pid, idx, c) : ''}
+        </div>`).join('') + '</div>';
     }
 
     function renderAuthModeTabs(pid) {
@@ -2100,23 +1837,25 @@
       return '';
     }
 
+    /** Tạm thời chỉ gemini-cli — các provider khác đã comment */
+    const ACTIVE_PROVIDER_IDS = new Set(['gemini-cli']);
     const KNOWN_PROVIDERS_FALLBACK = [
-      { id: 'openai', label: 'OpenAI', icon: '🤖', desc: 'GPT-4, Codex CLI…', defaultBaseUrl: 'https://api.openai.com/v1', authModes: ['apikey'] },
-      { id: 'chatgpt', label: 'ChatGPT / Codex', icon: '💬', desc: 'Codex CLI login', defaultBaseUrl: 'https://api.openai.com/v1', authModes: ['apikey', 'oauth'] },
-      { id: 'anthropic', label: 'Anthropic', icon: '🅰️', desc: 'Claude API key', defaultBaseUrl: 'https://api.anthropic.com/v1', authModes: ['apikey'] },
-      { id: 'claude', label: 'Claude Code', icon: '🧠', desc: 'Claude OAuth', defaultBaseUrl: 'https://api.anthropic.com/v1', authModes: ['oauth'] },
-      { id: 'deepseek', label: 'DeepSeek', icon: '🔍', desc: 'DeepSeek-V3 / R1', defaultBaseUrl: 'https://api.deepseek.com/v1', authModes: ['apikey'] },
-      { id: 'groq', label: 'Groq', icon: '⚡', desc: 'Ultra-fast inference', defaultBaseUrl: 'https://api.groq.com/openai/v1', authModes: ['apikey'] },
-      { id: 'mistral', label: 'Mistral AI', icon: '💨', desc: 'Mistral / Mixtral', defaultBaseUrl: 'https://api.mistral.ai/v1', authModes: ['apikey'] },
-      { id: 'together', label: 'Together AI', icon: '🤝', desc: 'Open-source models', defaultBaseUrl: 'https://api.together.xyz/v1', authModes: ['apikey'] },
-      { id: 'cohere', label: 'Cohere', icon: '🪐', desc: 'Command R+', defaultBaseUrl: 'https://api.cohere.ai/v1', authModes: ['apikey'] },
-      { id: 'perplexity', label: 'Perplexity', icon: '🔮', desc: 'Search-augmented AI', defaultBaseUrl: 'https://api.perplexity.ai', authModes: ['apikey'] },
-      { id: 'gemini', label: 'Google Gemini', icon: '✨', desc: 'AI Studio API key', defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', authModes: ['apikey'] },
-      { id: 'gemini-cli', label: 'Gemini CLI', icon: '🖥️', desc: 'Google OAuth', defaultBaseUrl: 'https://cloudcode-pa.googleapis.com', authModes: ['oauth'] },
-      { id: 'antigravity', label: 'Antigravity', icon: '🚀', desc: 'Google OAuth', defaultBaseUrl: 'https://cloudcode-pa.googleapis.com', authModes: ['oauth'] },
-      { id: 'copilot', label: 'GitHub Copilot', icon: '🐙', desc: 'GitHub OAuth', defaultBaseUrl: 'https://api.github.com', authModes: ['oauth'] },
-      { id: 'cursor', label: 'Cursor IDE', icon: '✏️', desc: 'Login tu Cursor app tren may', defaultBaseUrl: 'https://api2.cursor.sh', authModes: ['oauth'] },
-      { id: 'opencode', label: 'OpenCode Session', icon: '🦊', desc: 'OpenCode terminal session (opencode serve)', defaultBaseUrl: 'http://127.0.0.1:4096', authModes: ['oauth'] },
+      // { id: 'openai', ... },
+      // { id: 'chatgpt', ... },
+      // { id: 'anthropic', ... },
+      // { id: 'claude', ... },
+      // { id: 'deepseek', ... },
+      // { id: 'groq', ... },
+      // { id: 'mistral', ... },
+      // { id: 'together', ... },
+      // { id: 'cohere', ... },
+      // { id: 'perplexity', ... },
+      // { id: 'gemini', label: 'Google Gemini', ... AI Studio API key },
+      { id: 'gemini-cli', label: 'Gemini CLI (OAuth)', icon: '✨', desc: 'Gemini CLI API — cloudcode-pa', defaultBaseUrl: 'https://cloudcode-pa.googleapis.com', authModes: ['oauth'] },
+      // { id: 'antigravity', ... },
+      // { id: 'copilot', ... },
+      // { id: 'cursor', ... },
+      // { id: 'opencode', ... },
     ];
 
     const LOCAL_LOGIN_PROVIDERS = new Set(['cursor', 'chatgpt', 'opencode']);
@@ -2139,7 +1878,10 @@
       }
       const order = KNOWN_PROVIDERS_FALLBACK.map(p => p.id);
       const rest = [...byId.keys()].filter(id => !order.includes(id));
-      return [...order, ...rest].map(id => byId.get(id)).filter(Boolean);
+      return [...order, ...rest]
+        .map(id => byId.get(id))
+        .filter(Boolean)
+        .filter(p => ACTIVE_PROVIDER_IDS.has(p.id));
     }
 
     function getCatalogEntry(pid) {
@@ -2170,8 +1912,12 @@
     let providerQuota = {};
     let providerQuotaLoading = false;
     let providerQuotaUpdatedAt = null;
+    let providerModels = {};
+    let providerModelsLoading = false;
+    const modelTestStatus = {};
     let providerQuotaTimer = null;
     const quotaKeyReloading = new Set();
+    const quotaOauthReloading = new Set();
 
     function activateProvidersTab() {
       Promise.all([loadProviderCatalog(), loadProviders(), loadOAuthConnections(), loadOpenCodeStatus(), loadProxyConfigs()]).then(() => {
@@ -2198,6 +1944,24 @@
       if (pct >= 50) return 'bg-emerald-500';
       if (pct >= 20) return 'bg-amber-500';
       return 'bg-rose-500';
+    }
+    function formatQuotaResetCountdown(qOrReset) {
+      let ms = null;
+      if (qOrReset && typeof qOrReset === 'object' && !Array.isArray(qOrReset)) {
+        if (qOrReset.resetAtMs) ms = Number(qOrReset.resetAtMs);
+        else if (qOrReset.resetTime) ms = Date.parse(qOrReset.resetTime);
+        else if (qOrReset.resetCountdown) return qOrReset.resetCountdown;
+      } else if (typeof qOrReset === 'string') {
+        ms = Date.parse(qOrReset);
+      } else if (typeof qOrReset === 'number') {
+        ms = qOrReset < 1e12 ? qOrReset * 1000 : qOrReset;
+      }
+      if (!ms || isNaN(ms) || ms <= new Date('2020-01-01').getTime()) return '';
+      const diff = ms - Date.now();
+      if (diff <= 0) return '';
+      const mins = Math.ceil(diff / 60000);
+      if (mins < 60) return mins + ' phut';
+      return Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm';
     }
     function maskKey(k) {
       if (!k) return '';
@@ -2237,6 +2001,125 @@
         + '</svg></button>'
         + '</div>';
     }
+    function renderOAuthQuotaBar(pid, idx, conn) {
+      const q = providerQuota[pid]?.oauth?.[idx] || null;
+      const reloadId = pid + ':oauth:' + idx;
+      const isReloading = quotaOauthReloading.has(reloadId);
+      const hasQuota = q && !isReloading;
+      const pct = hasQuota ? quotaPercent(q) : 0;
+      const bar = hasQuota ? quotaBarColor(q, pct) : 'bg-slate-600/40';
+      const fillW = hasQuota && q.ok ? pct : 0;
+      const errLabel = hasQuota && !q.ok && q.label ? q.label : '';
+      const summary = isReloading ? 'Dang kiem tra...'
+        : hasQuota && q.ok ? (q.label || pct + '%')
+        : hasQuota && !q.ok ? (q.label || 'Loi quota')
+        : providerQuotaLoading ? 'Dang tai...'
+        : 'Chua kiem tra — bam nut refresh';
+      const resetText = hasQuota && q.ok ? formatQuotaResetCountdown(q) : '';
+      return ''
+        + '<div class="mt-2 space-y-1">'
+        + '<div class="flex items-center gap-1.5">'
+        + '<div class="flex-1 min-w-0">'
+        + '<div class="relative h-6 rounded-md overflow-hidden bg-slate-900/80 border border-white/[0.06]">'
+        + '<div class="absolute inset-y-0 left-0 transition-all duration-500 ' + bar + '/80" style="width:' + fillW + '%"></div>'
+        + '<div class="relative z-10 flex items-center justify-between gap-2 h-full min-h-[24px] px-2 py-0">'
+        + '<span class="text-[10px] leading-none font-mono font-medium truncate ' + (hasQuota && q.ok ? 'text-white' : 'text-slate-300') + '">'
+        + summary + '</span>'
+        + (hasQuota && q.ok ? '<span class="text-[9px] leading-none font-bold font-mono text-white/90 tabular-nums shrink-0">' + pct + '%</span>' : '')
+        + '</div></div></div>'
+        + '<button type="button" onclick="event.stopPropagation(); reloadOAuthQuota(\'' + pid + '\', ' + idx + ')" '
+        + 'class="shrink-0 flex items-center justify-center w-6 h-6 rounded-md text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition cursor-pointer disabled:opacity-40" '
+        + 'title="Kiem tra quota" ' + (isReloading ? 'disabled' : '') + '>'
+        + '<svg class="w-3.5 h-3.5 ' + (isReloading ? 'animate-spin' : '') + '" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+        + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>'
+        + '</svg></button>'
+        + '</div>'
+        + (resetText ? '<p class="text-[9px] leading-tight font-mono text-amber-400/90">Reset sau: ' + resetText + '</p>' : '')
+        + (errLabel ? '<p class="text-[8px] leading-tight font-mono text-rose-400/90 truncate" title="' + errLabel.replace(/"/g, '&quot;') + '">' + errLabel + '</p>' : '')
+        + renderGeminiQuotaBuckets(pid, idx)
+        + '</div>';
+    }
+
+    function renderGeminiQuotaBuckets(pid, idx) {
+      const q = providerQuota[pid]?.oauth?.[idx];
+      const buckets = q?.buckets;
+      if (!q?.ok || !Array.isArray(buckets) || !buckets.length) return '';
+      const top = buckets.slice(0, 6);
+      let html = '<div class="mt-1 space-y-0.5">';
+      for (const b of top) {
+        const p = b.percent != null ? b.percent : 0;
+        const color = p >= 50 ? 'bg-emerald-500' : (p >= 20 ? 'bg-amber-500' : 'bg-rose-500');
+        const resetText = formatQuotaResetCountdown(b);
+        html += '<div class="flex items-center gap-1.5 text-[8px] font-mono text-slate-500">'
+          + '<span class="w-24 truncate shrink-0" title="' + (b.modelId || '').replace(/"/g, '&quot;') + '">' + (b.modelId || '') + '</span>'
+          + '<div class="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">'
+          + '<div class="h-full ' + color + '/80" style="width:' + p + '%"></div></div>'
+          + '<span class="w-8 text-right tabular-nums shrink-0">' + p + '%</span>'
+          + (resetText ? '<span class="w-14 text-right text-amber-500/80 shrink-0" title="Reset quota">' + resetText + '</span>' : '')
+          + '</div>';
+      }
+      if (buckets.length > 6) {
+        html += '<p class="text-[8px] text-slate-600 italic">+' + (buckets.length - 6) + ' models...</p>';
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function mergeProviderQuotaEntry(pid, entry) {
+      if (!entry) return;
+      providerQuota[pid] = {
+        keys: entry.keys || [],
+        oauth: entry.oauth || [],
+        aggregate: entry.aggregate,
+      };
+    }
+
+    async function loadProviderQuotaFor(pid, refresh) {
+      const reloadIds = oauthConnections.filter(c => c.provider === pid).map((_, i) => pid + ':oauth:' + i);
+      reloadIds.forEach(id => quotaOauthReloading.add(id));
+      refreshProviderModalIfOpen();
+      try {
+        const res = await fetch('/api/admin/providers/quota?refresh=' + (refresh ? '1' : '0') + '&provider=' + encodeURIComponent(pid));
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Quota failed');
+        if (data.provider === pid && (data.oauth || data.keys)) {
+          mergeProviderQuotaEntry(pid, data);
+        } else if (data.quota?.[pid]) {
+          mergeProviderQuotaEntry(pid, data.quota[pid]);
+        }
+      } catch (e) {
+        showToast(e.message || 'Kiem tra quota that bai', 'error');
+      } finally {
+        reloadIds.forEach(id => quotaOauthReloading.delete(id));
+        refreshProviderModalIfOpen();
+        renderProviders();
+      }
+    }
+
+    async function reloadOAuthQuota(pid, idx) {
+      const reloadId = pid + ':oauth:' + idx;
+      if (quotaOauthReloading.has(reloadId)) return;
+      quotaOauthReloading.add(reloadId);
+      refreshProviderModalIfOpen();
+      try {
+        const res = await fetch('/api/admin/providers/quota?refresh=1&provider=' + encodeURIComponent(pid) + '&oauthIndex=' + idx);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Quota failed');
+        if (data.oauth) {
+          if (!providerQuota[pid]) providerQuota[pid] = { keys: [], oauth: [] };
+          if (!providerQuota[pid].oauth) providerQuota[pid].oauth = [];
+          providerQuota[pid].oauth[idx] = data.oauth;
+          providerQuota[pid].aggregate = data.oauth;
+          if (!data.oauth.ok) showToast(data.oauth.label || 'Quota loi', 'error');
+        }
+      } catch (e) {
+        showToast(e.message || 'Kiem tra quota that bai', 'error');
+      }
+      quotaOauthReloading.delete(reloadId);
+      refreshProviderModalIfOpen();
+      renderProviders();
+    }
+
     async function reloadKeyQuota(pid, idx) {
       const reloadId = pid + ':' + idx;
       if (quotaKeyReloading.has(reloadId)) return;
@@ -2255,17 +2138,49 @@
       quotaKeyReloading.delete(reloadId);
       renderProviders();
     }
+    function getConfiguredProviderIds() {
+      const pids = new Set();
+      for (const [pid, prov] of Object.entries(serverProviders?.providers || {})) {
+        if ((prov.keys || []).length > 0) pids.add(pid);
+      }
+      for (const c of oauthConnections) {
+        if (c.provider) pids.add(c.provider);
+      }
+      return [...pids];
+    }
+
     async function loadProviderQuotas(refresh) {
       const onProvidersTab = currentTab === 'providers';
       if (onProvidersTab) providerQuotaLoading = true;
-      try {
-        const res = await fetch('/api/admin/providers/quota' + (refresh ? '?refresh=1' : ''));
-        const data = await res.json();
-        if (data.quota) providerQuota = data.quota;
-        providerQuotaUpdatedAt = new Date();
-      } catch (e) { /* silent */ }
-      providerQuotaLoading = false;
       if (onProvidersTab) renderProviders();
+      try {
+        const pids = getConfiguredProviderIds();
+        if (!pids.length) {
+          providerQuota = {};
+        } else {
+          const results = await Promise.all(pids.map(async (pid) => {
+            const res = await fetch('/api/admin/providers/quota?provider=' + encodeURIComponent(pid) + (refresh ? '&refresh=1' : ''));
+            const data = await res.json();
+            if (!data.success || data.provider !== pid) return null;
+            return [pid, {
+              keys: data.keys || [],
+              oauth: data.oauth || [],
+              aggregate: data.aggregate,
+            }];
+          }));
+          const next = {};
+          for (const entry of results) {
+            if (entry) next[entry[0]] = entry[1];
+          }
+          providerQuota = next;
+        }
+        providerQuotaUpdatedAt = new Date();
+      } catch (e) {
+        showToast('Kiem tra quota that bai', 'error');
+      }
+      providerQuotaLoading = false;
+      renderProviders();
+      refreshProviderModalIfOpen();
     }
 
     // ── Load from server ──
@@ -2338,7 +2253,370 @@
       }
     }
 
-    // ── Render provider cards ──
+    function providerCardSummary(pid, prov, keys, oauthRows) {
+      const parts = [];
+      if (oauthRows.length) parts.push(oauthRows.length + ' tai khoan');
+      if (keys.length) parts.push(keys.length + ' key');
+      if (!parts.length) parts.push('Chua cau hinh');
+      const proxy = prov.proxyId ? (_proxyList.find(x => x.id === prov.proxyId)?.label || prov.proxyId) : 'Direct';
+      return parts.join(' · ') + ' · ' + proxy;
+    }
+
+    function buildProviderDetailHtml(p) {
+      const prov = ensureProviderEntry(p.id);
+      const keys = prov.keys || [];
+      const oauthRows = oauthConnections.filter(c => c.provider === p.id);
+      const isActive = serverProviders.activeProvider === p.id && prov.enabled !== false;
+      const authTab = getProviderAuthTab(p.id);
+      const showKeys = providerSupports(p.id, 'apikey') && (!providerSupports(p.id, 'oauth') || authTab === 'apikey');
+      const showOauth = providerSupports(p.id, 'oauth') && (!providerSupports(p.id, 'apikey') || authTab === 'oauth');
+      const oauthDisabledMsg = oauthLoginDisabled(p.id);
+      const canRotate = keys.length > 1 || oauthRows.length > 1;
+      const rotateOn = prov.rotateEnabled === true;
+      const showRotateToggle = showKeys || showOauth;
+
+      return ''
+        + '<div class="flex items-start justify-between mb-5">'
+        + '<div class="flex items-center space-x-3 min-w-0">'
+        + '<div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ' + (isActive ? 'bg-indigo-500/20' : 'bg-white/[0.04]') + '">' + p.icon + '</div>'
+        + '<div class="min-w-0">'
+        + '<h3 class="text-sm font-bold text-slate-200 truncate">' + escapeHtml(p.label) + '</h3>'
+        + '<p class="text-[10px] font-mono mt-0.5 ' + (isActive ? 'text-indigo-400' : 'text-slate-600') + '">' + (isActive ? 'ROUTING · ENABLED' : 'OFF') + '</p>'
+        + '</div></div>'
+        + '<button type="button" onclick="closeProviderModal()" class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/[0.06] cursor-pointer" title="Dong">✕</button>'
+        + '</div>'
+        + '<div class="space-y-4">'
+        + '<section class="rounded-xl border border-white/[0.06] bg-black/20 p-4 space-y-3">'
+        + '<h4 class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Cau hinh</h4>'
+        + '<div class="grid grid-cols-2 gap-3 items-start">'
+        + '<div class="space-y-1 min-w-0' + (showRotateToggle ? '' : ' col-span-2') + '">'
+        + '<label class="text-[10px] text-slate-600">Proxy</label>'
+        + '<div class="flex items-center space-x-1.5">'
+        + '<select onchange="setProviderProxy(\'' + p.id + '\', this.value)" class="flex-1 min-w-0 bg-black/40 border border-white/[0.05] rounded-lg px-2 py-1.5 text-[10px] text-slate-300 focus:outline-none focus:border-teal-500/40 transition font-mono">'
+        + renderProxyOptions(prov.proxyId)
+        + '</select>'
+        + '<button type="button" onclick="switchTab(\'proxy\'); closeProviderModal();" class="flex-shrink-0 px-2 py-1.5 text-[9px] text-teal-400 hover:text-teal-300 font-bold cursor-pointer">Manage</button>'
+        + '</div></div>'
+        + (showRotateToggle ? '<div class="space-y-1.5 min-w-0" onclick="event.stopPropagation()">'
+        + '<span class="text-[10px] text-slate-300 font-semibold block">Xoay vong (Round Robin)</span>'
+        + '<div class="flex items-center justify-between gap-2">'
+        + '<span class="text-[9px] text-slate-600 leading-snug">'
+        + (canRotate ? 'Doi key/tai khoan moi request' : 'Can 2+ key/tai khoan')
+        + '</span>'
+        + '<button type="button" id="provider-rotate-' + p.id + '" role="switch" aria-checked="' + (rotateOn ? 'true' : 'false') + '" '
+        + 'onclick="event.stopPropagation(); toggleProviderRotate(\'' + p.id + '\', ' + (!rotateOn) + ')" '
+        + 'class="relative w-11 h-6 rounded-full shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 transition '
+        + (rotateOn ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-slate-800') + '">'
+        + '<span class="absolute top-0.5 left-[2px] h-5 w-5 rounded-full bg-slate-300 transition-transform '
+        + (rotateOn ? 'translate-x-[20px] bg-white' : '') + '"></span>'
+        + '</button></div></div>' : '')
+        + '</div>'
+        + (p.id === 'opencode' ? renderOpenCodeStatus(isActive) : '')
+        + '</section>'
+        + (renderAuthModeTabs(p.id) ? '<div>' + renderAuthModeTabs(p.id) + '</div>' : '')
+        + (showKeys ? '<section class="rounded-xl border border-white/[0.06] bg-black/20 p-4 space-y-2">'
+        + '<div class="flex items-center justify-between">'
+        + '<h4 class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">API Keys (' + keys.length + ')</h4>'
+        + '<div class="flex items-center gap-2">'
+        + (keys.length > 1 ? '<button type="button" onclick="rotateProviderKeys(\'' + p.id + '\')" class="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold cursor-pointer">Rotate</button>' : '')
+        + '<button type="button" onclick="openAddKeyModal(\'' + p.id + '\')" class="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold cursor-pointer">+ Key</button>'
+        + '</div></div>'
+        + (keys.length > 0 ? keys.map((k, i) => renderKeyProgressBar(p.id, i, k)).join('') : '<p class="text-[11px] text-slate-600 italic">Chua co API key</p>')
+        + '</section>' : '')
+        + (showOauth ? '<section class="rounded-xl border border-white/[0.06] bg-black/20 p-4 space-y-2">'
+        + '<div class="flex items-center justify-between">'
+        + '<h4 class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Tai khoan OAuth</h4>'
+        + '<div class="flex items-center gap-2">'
+        + '<button type="button" onclick="loadProviderQuotaFor(\'' + p.id + '\', true)" class="text-[10px] text-slate-400 hover:text-emerald-400 font-bold cursor-pointer" title="Kiem tra quota">↻ Quota</button>'
+        + (oauthUsesLocalLogin(p.id)
+          ? '<button type="button" onclick="startOAuthLogin(\'' + p.id + '\')" class="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold cursor-pointer">' + localLoginButtonLabel(p.id) + '</button>'
+          : oauthDisabledMsg
+          ? '<span class="text-[10px] text-slate-500">Login (chua ho tro)</span>'
+          : '<button type="button" onclick="startOAuthLogin(\'' + p.id + '\')" class="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold cursor-pointer">+ Login</button>')
+        + '</div></div>'
+        + renderOAuthConnections(p.id)
+        + '</section>' : '')
+        + (p.id === 'gemini-cli' ? '<section class="rounded-xl border border-white/[0.06] bg-black/20 p-4 space-y-2">'
+        + '<div class="flex items-center justify-between">'
+        + '<h4 class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Available Models</h4>'
+        + '<button type="button" onclick="loadProviderModels(\'' + p.id + '\', true)" class="text-[10px] text-slate-400 hover:text-emerald-400 font-bold cursor-pointer" title="Tai lai danh sach">↻</button>'
+        + '</div>'
+        + '<div id="provider-models-list-' + p.id + '"><p class="text-[10px] text-slate-500 italic">Dang tai...</p></div>'
+        + '</section>' : '')
+        + '</div>';
+    }
+
+    function modelPercentColor(pct) {
+      if (pct == null || isNaN(pct)) return 'text-slate-500';
+      if (pct >= 50) return 'text-emerald-400';
+      if (pct >= 20) return 'text-amber-400';
+      return 'text-rose-400';
+    }
+
+    function renderProviderModelsList(pid) {
+      const el = document.getElementById('provider-models-list-' + pid);
+      if (!el) return;
+      const entry = providerModels[pid];
+      if (providerModelsLoading && pid === _providerModalId) {
+        el.innerHTML = '<p class="text-[10px] text-slate-500 italic">Dang tai models...</p>';
+        return;
+      }
+      if (!entry?.models?.length) {
+        el.innerHTML = '<p class="text-[10px] text-slate-500 italic">Chua co danh sach model — bam ↻ hoac login OAuth</p>';
+        return;
+      }
+      const rows = entry.models.map((m) => {
+        const testKey = pid + ':' + m.id;
+        const test = modelTestStatus[testKey];
+        const pctCls = modelPercentColor(m.percent);
+        const pctText = m.percent != null ? m.percent + '%' : '—';
+        const added = m.inCliMapping;
+        const testTitle = test?.label || 'Test connect';
+        const testCls = test?.loading ? 'text-slate-400'
+          : test?.ok === true ? 'text-emerald-400 hover:text-emerald-300'
+          : test?.ok === false ? 'text-rose-400 hover:text-rose-300'
+          : 'text-slate-400 hover:text-sky-400';
+        const safeId = m.id.replace(/'/g, "\\'");
+        return ''
+          + '<div class="rounded-md bg-black/30 border border-white/[0.05] px-2 py-1.5 min-w-0">'
+          + '<div class="flex items-center gap-1.5">'
+          + '<div class="min-w-0 flex-1">'
+          + '<div class="text-[10px] font-mono text-slate-200 truncate" title="' + escapeHtmlAttr(m.id) + '">' + escapeHtml(m.id) + '</div>'
+          + '<div class="flex items-center gap-1.5 mt-0.5">'
+          + '<span class="text-[9px] font-bold tabular-nums ' + pctCls + '">' + pctText + '</span>'
+          + (m.resetCountdown ? '<span class="text-[8px] text-amber-500/80">· ' + escapeHtml(m.resetCountdown) + '</span>' : '')
+          + (added ? '<span class="text-[8px] text-indigo-400/80">· CLI</span>' : '')
+          + '</div></div>'
+          + '<button type="button" onclick="event.stopPropagation(); testProviderModel(\'' + pid + '\', \'' + safeId + '\')" '
+          + 'class="shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition cursor-pointer ' + testCls + '" title="' + escapeHtmlAttr(testTitle) + '">'
+          + '<svg class="w-3.5 h-3.5' + (test?.loading ? ' animate-spin' : '') + '" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+          + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>'
+          + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
+          + '</svg></button>'
+          + '<button type="button" onclick="event.stopPropagation(); addProviderModelToCli(\'' + pid + '\', \'' + safeId + '\')" '
+          + 'class="shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition cursor-pointer '
+          + (added ? 'text-indigo-400/50 cursor-default' : 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10') + '" '
+          + 'title="' + (added ? 'Da co trong CLI mapping' : 'Them vao CLI mapping') + '" ' + (added ? 'disabled' : '') + '>'
+          + '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+          + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>'
+          + '</svg></button>'
+          + '</div>'
+          + (test?.label && !test.loading ? '<p class="mt-1 text-[8px] font-mono truncate ' + (test.ok ? 'text-emerald-400/90' : 'text-rose-400/90') + '">' + escapeHtml(test.label) + '</p>' : '')
+          + '</div>';
+      }).join('');
+      el.innerHTML = '<div class="grid grid-cols-2 gap-2">' + rows + '</div>';
+    }
+
+    const DEFAULT_GEMINI_CLI_MODELS = [
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.5-pro',
+      'gemini-3-flash-preview',
+      'gemini-3.1-pro-preview',
+      'gemini-3-pro-preview',
+      'gemini-2.0-flash',
+    ];
+
+    function buildProviderModelsLocal(pid) {
+      const cliMappings = state.mappings?.cli || {};
+      const buckets = providerQuota[pid]?.oauth?.[0]?.buckets || [];
+      const byId = new Map();
+      for (const id of DEFAULT_GEMINI_CLI_MODELS) {
+        byId.set(id, {
+          id,
+          percent: null,
+          resetCountdown: '',
+          inCliMapping: Object.entries(cliMappings).some(([, to]) => to === id)
+            || Object.prototype.hasOwnProperty.call(cliMappings, id),
+          source: 'builtin',
+        });
+      }
+      for (const b of buckets) {
+        const id = b.modelId;
+        if (!id) continue;
+        const prev = byId.get(id) || {
+          id, percent: null, resetCountdown: '', inCliMapping: false, source: 'quota',
+        };
+        byId.set(id, {
+          ...prev,
+          percent: b.percent != null ? b.percent : prev.percent,
+          resetCountdown: b.resetCountdown || formatQuotaResetCountdown(b) || prev.resetCountdown,
+          source: prev.source === 'builtin' ? 'builtin+quota' : 'quota',
+          inCliMapping: prev.inCliMapping
+            || Object.entries(cliMappings).some(([, to]) => to === id)
+            || Object.prototype.hasOwnProperty.call(cliMappings, id),
+        });
+      }
+      return {
+        provider: pid,
+        models: [...byId.values()].sort((a, b) => a.id.localeCompare(b.id)),
+        cliMappings,
+        hasOAuth: (oauthConnections || []).some(c => c.provider === pid),
+      };
+    }
+
+    async function fetchProviderModelsApi(pid, refresh) {
+      const qs = '?refresh=' + (refresh ? '1' : '0');
+      const urls = [
+        '/api/admin/providers/' + encodeURIComponent(pid) + '/models' + qs,
+        '/api/admin/providers?provider=' + encodeURIComponent(pid) + '&models=1' + (refresh ? '&refresh=1' : ''),
+        '/api/admin/providers/quota?provider=' + encodeURIComponent(pid) + '&models=1' + (refresh ? '&refresh=1' : ''),
+      ];
+      for (const url of urls) {
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          if (res.ok && data.success && Array.isArray(data.models)) return data;
+        } catch { /* try next */ }
+      }
+      return null;
+    }
+
+    async function loadProviderModels(pid, refresh) {
+      if (pid !== 'gemini-cli') return;
+      providerModelsLoading = true;
+      renderProviderModelsList(pid);
+      try {
+        if (refresh) await loadProviderQuotaFor(pid, true);
+        const data = await fetchProviderModelsApi(pid, refresh);
+        if (data) {
+          providerModels[pid] = data;
+          if (data.cliMappings) {
+            ensureMappingsState();
+            state.mappings.cli = data.cliMappings;
+          }
+        } else {
+          providerModels[pid] = buildProviderModelsLocal(pid);
+        }
+      } catch (e) {
+        providerModels[pid] = buildProviderModelsLocal(pid);
+        if (!providerModels[pid]?.models?.length) {
+          showToast(e.message || 'Tai models that bai', 'error');
+        }
+      }
+      providerModelsLoading = false;
+      renderProviderModelsList(pid);
+    }
+
+    function isTestModelResponse(data) {
+      return data && typeof data.ok === 'boolean' && (data.modelId || data.status);
+    }
+
+    function isAddModelResponse(data) {
+      return data && data.success === true && data.cliMappings && typeof data.cliMappings === 'object';
+    }
+
+    async function postProviderModelAction(action, pid, modelId) {
+      const urls = [
+        '/api/admin/providers/' + encodeURIComponent(pid) + '/models/' + (action === 'testModel' ? 'test' : 'add'),
+        '/api/admin/providers',
+      ];
+      let lastError = 'API chua san sang';
+      for (let i = 0; i < urls.length; i++) {
+        const body = i === 0
+          ? { modelId }
+          : { action, providerId: pid, modelId };
+        try {
+          const res = await fetch(urls[i], {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          if (action === 'testModel' && res.ok && isTestModelResponse(data)) return data;
+          if (action === 'addModel' && res.ok && isAddModelResponse(data)) return data;
+          if (res.status === 404) {
+            lastError = 'Endpoint chua co — restart server (npm start)';
+            continue;
+          }
+          if (data?.data?.providers) {
+            lastError = 'Server chua cap nhat — restart npm start de test model';
+            continue;
+          }
+          lastError = data.error || data.label || lastError;
+        } catch (e) {
+          lastError = e.message || lastError;
+        }
+      }
+      throw new Error(lastError);
+    }
+
+    async function testProviderModel(pid, modelId) {
+      const testKey = pid + ':' + modelId;
+      if (modelTestStatus[testKey]?.loading) return;
+      modelTestStatus[testKey] = { loading: true };
+      renderProviderModelsList(pid);
+      try {
+        const data = await postProviderModelAction('testModel', pid, modelId);
+        modelTestStatus[testKey] = { loading: false, ok: !!data.ok, label: data.label || (data.ok ? 'OK' : 'Loi') };
+        if (!data.ok) showToast(data.label || data.error || 'Test that bai', 'error');
+        else showToast(modelId + ': ' + (data.label || 'OK'));
+      } catch (e) {
+        modelTestStatus[testKey] = { loading: false, ok: false, label: e.message || 'Loi mang' };
+        showToast(e.message || 'Test that bai', 'error');
+      }
+      renderProviderModelsList(pid);
+    }
+
+    async function addProviderModelToCli(pid, modelId) {
+      const m = providerModels[pid]?.models?.find(x => x.id === modelId);
+      if (m?.inCliMapping) {
+        showToast('Model da co trong CLI mapping');
+        return;
+      }
+      try {
+        const data = await postProviderModelAction('addModel', pid, modelId);
+        if (!data.success) throw new Error(data.error || 'Them model that bai');
+        ensureMappingsState();
+        state.mappings.cli = data.cliMappings || state.mappings.cli || {};
+        providerModels[pid] = buildProviderModelsLocal(pid);
+        renderProviderModelsList(pid);
+        showToast('Da them ' + modelId + ' vao CLI mapping');
+      } catch (e) {
+        showToast(e.message || 'Them model that bai', 'error');
+      }
+    }
+
+    let _providerModalId = null;
+
+    async function openProviderModal(pid) {
+      const p = getCatalogEntry(pid) || getProviderList().find(x => x.id === pid);
+      if (!p) return;
+      _providerModalId = pid;
+      const modal = document.getElementById('provider-modal');
+      const content = document.getElementById('provider-modal-content');
+      content.innerHTML = buildProviderDetailHtml(p);
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modal.classList.add('opacity-100', 'pointer-events-auto');
+      modal.querySelector('.glass-card')?.classList.remove('scale-95');
+      modal.querySelector('.glass-card')?.classList.add('scale-100');
+      const oauthRows = oauthConnections.filter(c => c.provider === pid);
+      if (oauthRows.length && providerSupports(pid, 'oauth')) {
+        const stale = !providerQuota[pid]?.oauth?.length || oauthRows.some((_, idx) => !providerQuota[pid]?.oauth?.[idx]);
+        if (stale) await loadProviderQuotaFor(pid, true);
+      }
+      if (pid === 'gemini-cli') await loadProviderModels(pid, true);
+    }
+
+    function closeProviderModal() {
+      _providerModalId = null;
+      const modal = document.getElementById('provider-modal');
+      modal.classList.remove('opacity-100', 'pointer-events-auto');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modal.querySelector('.glass-card')?.classList.remove('scale-100');
+      modal.querySelector('.glass-card')?.classList.add('scale-95');
+    }
+
+    function refreshProviderModalIfOpen() {
+      if (!_providerModalId) return;
+      const p = getCatalogEntry(_providerModalId) || getProviderList().find(x => x.id === _providerModalId);
+      if (!p) return;
+      const content = document.getElementById('provider-modal-content');
+      if (content) content.innerHTML = buildProviderDetailHtml(p);
+      if (_providerModalId === 'gemini-cli') renderProviderModelsList('gemini-cli');
+    }
+
+    // ── Render provider cards (compact — chi tiet trong modal) ──
     function renderProviders() {
       const container = document.getElementById('providers-list');
       if (!container) return;
@@ -2353,89 +2631,43 @@
         const hasKeys = keys.length > 0;
         const hasOauth = oauthRows.length > 0;
         const canRoute = hasKeys || hasOauth;
-        const baseUrl = prov.baseUrl || p.defaultBaseUrl || '';
-        const authTab = getProviderAuthTab(p.id);
-        const showKeys = providerSupports(p.id, 'apikey') && (!providerSupports(p.id, 'oauth') || authTab === 'apikey');
-        const showOauth = providerSupports(p.id, 'oauth') && (!providerSupports(p.id, 'apikey') || authTab === 'oauth');
-        const oauthDisabledMsg = oauthLoginDisabled(p.id);
+        const summary = providerCardSummary(p.id, prov, keys, oauthRows);
 
         const card = document.createElement('div');
-        card.className = `flex flex-col p-5 rounded-xl border transition duration-200 ${isActive ? 'bg-indigo-500/10 border-indigo-500/30 shadow-lg shadow-indigo-500/10' : (canRoute || hasOauth) ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-white/[0.01] border-white/[0.03] hover:border-white/[0.07]'}`;
+        card.className = `flex flex-col p-4 rounded-xl border transition duration-200 cursor-pointer ${isActive ? 'bg-indigo-500/10 border-indigo-500/30 shadow-lg shadow-indigo-500/10' : (canRoute || hasOauth) ? 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1]' : 'bg-white/[0.01] border-white/[0.03] hover:border-white/[0.07]'}`;
+        card.onclick = (e) => {
+          if (e.target.closest('button, select, input, a, label')) return;
+          openProviderModal(p.id);
+        };
 
         card.innerHTML = `
-          <div class="flex items-start justify-between mb-3">
-            <div class="flex items-center space-x-3">
-              <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base ${isActive ? 'bg-indigo-500/20' : 'bg-white/[0.04]'}">${p.icon}</div>
-              <div>
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center space-x-3 min-w-0 flex-1">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center text-base shrink-0 ${isActive ? 'bg-indigo-500/20' : 'bg-white/[0.04]'}">${p.icon}</div>
+              <div class="min-w-0">
                 <div class="flex items-center space-x-2">
                   <span class="relative flex h-2 w-2 shrink-0">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isActive ? 'bg-indigo-400' : 'bg-slate-700'}"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 ${isActive ? 'bg-indigo-400' : 'bg-slate-700'}"></span>
                   </span>
-                  <span class="text-sm font-bold text-slate-200">${p.label}</span>
-                  ${isActive ? '<span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300">ROUTING</span>' : ''}
+                  <span class="text-sm font-bold text-slate-200 truncate">${p.label}</span>
+                  ${isActive ? '<span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300 shrink-0">ROUTING</span>' : ''}
                 </div>
-                <span class="text-[10px] font-mono mt-0.5 block ${isActive ? 'text-indigo-400' : 'text-slate-600'}">${isActive ? 'ENABLED' : 'OFF'}</span>
+                <span class="text-[10px] text-slate-500 mt-0.5 block truncate">${summary}</span>
               </div>
             </div>
-            <div class="flex items-center space-x-2 shrink-0">
-              <button type="button" onclick="event.stopPropagation(); selectActiveProvider('${p.id}')"
-                      class="inline-flex items-center cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-full p-0.5"
-                      title="Chon Active (can key hoac OAuth)">
-                <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${isActive ? 'border-indigo-400 bg-indigo-500/30' : 'border-slate-600 bg-transparent hover:border-slate-400'}">
-                  ${isActive ? '<span class="w-1.5 h-1.5 rounded-full bg-indigo-300"></span>' : ''}
-                </span>
-              </button>
+            <div class="flex items-center shrink-0">
               <button type="button" onclick="event.stopPropagation(); toggleProviderSwitch('${p.id}')"
                       class="relative w-11 h-6 rounded-full shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${isActive ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-slate-800'} ${canRoute ? '' : 'opacity-60'}"
                       title="${canRoute ? 'Bat/tat routing' : 'Can API key hoac Login OAuth'}">
                 <span class="absolute top-0.5 left-[2px] h-5 w-5 rounded-full bg-slate-300 transition-transform ${isActive ? 'translate-x-[20px] bg-white' : ''}"></span>
               </button>
-              ${showKeys ? `<button type="button" onclick="event.stopPropagation(); openAddKeyModal('${p.id}')" class="px-2 py-1 text-[10px] font-bold rounded-lg transition duration-150 cursor-pointer focus:outline-none ${hasKeys ? 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30' : 'bg-white/[0.04] text-slate-400 hover:text-slate-200 hover:bg-white/[0.08]'}">+ Key</button>` : ''}
-              ${showOauth ? (oauthUsesLocalLogin(p.id)
-                ? `<button type="button" onclick="event.stopPropagation(); startOAuthLogin('${p.id}')" class="px-2 py-1 text-[10px] font-bold rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 cursor-pointer" title="Doc session tu app da login tren may">${localLoginButtonLabel(p.id)}</button>`
-                : oauthDisabledMsg
-                ? `<span class="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-800 text-slate-500 cursor-not-allowed" title="${oauthDisabledMsg.replace(/"/g, '&quot;')}">Login (chua ho tro)</span>`
-                : `<button type="button" onclick="event.stopPropagation(); startOAuthLogin('${p.id}')" class="px-2 py-1 text-[10px] font-bold rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 cursor-pointer" title="Login OAuth">Login</button>`) : ''}
             </div>
           </div>
-          <div class="mb-3 space-y-1">
-            <label class="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Upstream baseUrl</label>
-            <div class="bg-black/30 border border-white/[0.04] rounded-md px-2 py-1 text-[10px] text-slate-500 font-mono break-all leading-snug">${baseUrl || p.defaultBaseUrl || '—'}</div>
-          </div>
-          <div class="mb-3 space-y-1">
-            <label class="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Proxy</label>
-            <div class="flex items-center space-x-1.5">
-              <select onchange="setProviderProxy('${p.id}', this.value)" class="flex-1 bg-black/40 border border-white/[0.05] rounded-lg px-2 py-1 text-[10px] text-slate-300 focus:outline-none focus:border-teal-500/40 transition font-mono">
-                ${renderProxyOptions(prov.proxyId)}
-              </select>
-              <button type="button" onclick="switchTab('proxy')" class="flex-shrink-0 px-2 py-1 text-[9px] text-teal-400 hover:text-teal-300 font-bold cursor-pointer" title="Manage proxies">+ Manage</button>
-            </div>
-          </div>
-          ${p.id === 'opencode' ? renderOpenCodeStatus(isActive) : ''}
-          ${renderAuthModeTabs(p.id)}
-          ${showKeys ? (keys.length > 0 ? `
-          <div class="border-t border-white/[0.03] pt-3 space-y-1.5">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Keys (${keys.length})</span>
-              ${keys.length > 1 ? `<button onclick="rotateProviderKeys('${p.id}')" class="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center space-x-1 cursor-pointer">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                <span>Rotate</span>
-              </button>` : ''}
-            </div>
-            ${keys.map((k, i) => renderKeyProgressBar(p.id, i, k)).join('')}
-          </div>` : `
-          <div class="border-t border-white/[0.03] pt-3">
-            <span class="text-[11px] text-slate-600 italic">Chua co API key</span>
-          </div>`) : ''}
-          ${showOauth ? `
-          <div class="border-t border-white/[0.03] pt-3 space-y-1.5">
-            <span class="text-[10px] uppercase tracking-wider text-slate-600 font-bold">Tai khoan OAuth</span>
-            ${renderOAuthConnections(p.id)}
-          </div>` : ''}
         `;
         container.appendChild(card);
       });
+      refreshProviderModalIfOpen();
     }
 
     // ── Modal ──
@@ -2792,10 +3024,62 @@
       }
     }
 
+    const rotateSaving = {};
+
+    function setProviderRotateToggleUi(providerId, enabled) {
+      const btn = document.getElementById('provider-rotate-' + providerId);
+      if (!btn) return;
+      const on = enabled === true;
+      btn.setAttribute('aria-checked', on ? 'true' : 'false');
+      btn.className = 'relative w-11 h-6 rounded-full shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 transition '
+        + (on ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-slate-800');
+      const knob = btn.querySelector('span');
+      if (knob) {
+        knob.className = 'absolute top-0.5 left-[2px] h-5 w-5 rounded-full bg-slate-300 transition-transform '
+          + (on ? 'translate-x-[20px] bg-white' : '');
+      }
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        toggleProviderRotate(providerId, !on);
+      };
+    }
+
+    async function toggleProviderRotate(providerId, enabled) {
+      if (rotateSaving[providerId]) return;
+      const prov = ensureProviderEntry(providerId);
+      const prev = prov.rotateEnabled === true;
+      const next = enabled === true;
+      if (prev === next) return;
+
+      rotateSaving[providerId] = true;
+      prov.rotateEnabled = next;
+      setProviderRotateToggleUi(providerId, next);
+
+      try {
+        const res = await fetch('/api/admin/providers/' + encodeURIComponent(providerId) + '/rotate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: next }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'Luu that bai');
+        prov.rotateEnabled = data.rotateEnabled === true;
+        setProviderRotateToggleUi(providerId, prov.rotateEnabled);
+        showToast(prov.rotateEnabled ? 'Bat Round Robin' : 'Tat Round Robin');
+      } catch (e) {
+        prov.rotateEnabled = prev;
+        setProviderRotateToggleUi(providerId, prev);
+        showToast(e.message || 'Luu Round Robin that bai', 'error');
+      } finally {
+        delete rotateSaving[providerId];
+      }
+    }
+
     async function setProviderProxy(providerId, proxyId) {
       if (!serverProviders?.providers?.[providerId]) return;
       serverProviders.providers[providerId].proxyId = proxyId || null;
       await syncToServer();
+      renderProviders();
       showToast(`Proxy updated for ${providerId}`, 'success');
     }
 
