@@ -1,5 +1,5 @@
 const { err } = require("../logger");
-const { prepareClientRequest, fetchRouter, pipeSSE } = require("./base");
+const { prepareClientRequest, fetchRouter, pipeSSE, setLogUpstreamModel } = require("./base");
 
 /**
  * Intercept Copilot request — client converter → router.
@@ -8,6 +8,7 @@ const { prepareClientRequest, fetchRouter, pipeSSE } = require("./base");
 async function intercept(req, res, bodyBuffer, mappedModel) {
   try {
     const ctx = await prepareClientRequest("copilot", req, bodyBuffer, mappedModel);
+    setLogUpstreamModel(res, ctx.body?.model);
     const routerRes = await fetchRouter(
       ctx.body,
       ctx.routerPath || "/v1/chat/completions",

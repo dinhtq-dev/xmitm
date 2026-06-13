@@ -71,6 +71,73 @@
       scrollbar-width: thin;
       scrollbar-color: rgba(249, 115, 22, 0.3) rgba(8, 5, 4, 0.3);
     }
+
+    /* Tokens & Costs dashboard */
+    .token-hero-glow {
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, rgba(251, 191, 36, 0.04) 45%, transparent 70%);
+    }
+    .token-stat-card {
+      background: linear-gradient(160deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.008) 100%);
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .token-stat-card:hover {
+      border-color: rgba(255,255,255,0.1);
+      transform: translateY(-1px);
+    }
+    .token-stat-card--cost {
+      background: linear-gradient(145deg, rgba(249,115,22,0.14) 0%, rgba(20,12,10,0.5) 55%, rgba(8,5,4,0.8) 100%);
+      border-color: rgba(249,115,22,0.22);
+      box-shadow: 0 0 60px -20px rgba(249,115,22,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .token-stat-card--cost:hover {
+      border-color: rgba(249,115,22,0.35);
+      box-shadow: 0 0 70px -15px rgba(249,115,22,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .token-range-btn {
+      color: rgba(148, 163, 184, 1);
+      transition: all 0.18s ease;
+    }
+    .token-range-btn:hover {
+      color: rgba(226, 232, 240, 1);
+      background: rgba(255,255,255,0.04);
+    }
+    .token-range-active {
+      color: rgb(251, 146, 60) !important;
+      background: rgba(249,115,22,0.12) !important;
+      box-shadow: 0 0 0 1px rgba(249,115,22,0.28), 0 4px 14px -6px rgba(249,115,22,0.45);
+    }
+    .token-mix-track {
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .token-mix-in {
+      background: linear-gradient(90deg, rgba(56,189,248,0.85), rgba(14,165,233,0.55));
+      box-shadow: 0 0 20px -4px rgba(56,189,248,0.5);
+    }
+    .token-mix-out {
+      background: linear-gradient(90deg, rgba(251,146,60,0.9), rgba(249,115,22,0.6));
+      box-shadow: 0 0 20px -4px rgba(249,115,22,0.45);
+    }
+    .token-daily-bar {
+      background: linear-gradient(90deg, rgba(249,115,22,0.75), rgba(251,191,36,0.45));
+      border-radius: 999px;
+      min-width: 4px;
+      transition: width 0.35s ease;
+    }
+    .token-pricing-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(0,0,0,0.2) 100%);
+      border: 1px solid rgba(255,255,255,0.04);
+      transition: border-color 0.2s ease;
+    }
+    .token-pricing-card:hover {
+      border-color: rgba(249,115,22,0.2);
+    }
+    @keyframes tokenPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+    .token-loading-pulse { animation: tokenPulse 1.4s ease-in-out infinite; }
   </style>
 </head>
 <body class="min-h-full flex flex-col bg-[#080504] bg-[radial-gradient(120%_120%_at_50%_10%,#2d140b_0%,#080504_60%,#000000_100%)]">
@@ -203,6 +270,10 @@
         <button id="tab-settings" onclick="switchTab('settings')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
           <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m-5 8a2 2 0 01-2-2V9a2 2 0 012-2h3m-1 1v-5a1 1 0 10-2 0v5H5V7a3 3 0 00-3 3v8a3 3 0 003 3h10a3 3 0 003-3v-3h-5z"></path></svg>
           Client Keys
+        </button>
+        <button id="tab-tokens" onclick="switchTab('tokens')" class="tab-btn px-5 py-3 text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition duration-150 cursor-pointer focus:outline-none">
+          <svg class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+          Tokens & Costs
         </button>
       </div>
 
@@ -586,6 +657,208 @@
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Tokens & Costs -->
+      <div id="panel-tokens" class="tab-panel hidden space-y-6">
+        <div class="glass-card rounded-2xl p-6 md:p-8 shadow-2xl flex flex-col relative overflow-hidden">
+          <div class="absolute -right-16 -top-16 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -left-20 bottom-0 w-56 h-56 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+          <!-- Header -->
+          <div class="relative z-10 flex flex-col gap-5 mb-7">
+            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div>
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-[10px] font-bold uppercase tracking-wider text-orange-300 mb-3">
+                  <span class="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
+                  Usage Analytics
+                </div>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-50 flex items-center gap-2.5 heading">
+                  <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500/30 to-amber-600/10 border border-orange-500/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                  </span>
+                  Tokens &amp; Costs
+                </h2>
+                <p class="text-xs text-slate-500 mt-2 max-w-xl leading-relaxed">
+                  Ước tính chi phí từ token usage thực tế — không phải hóa đơn chính thức từ Google/OpenAI.
+                </p>
+              </div>
+              <div class="flex items-center gap-2 text-[10px] font-mono text-slate-500 lg:pt-8">
+                <span class="px-2 py-1 rounded-lg bg-black/30 border border-white/[0.04]">Auto-refresh 10s</span>
+                <span id="token-stats-range-label" class="px-2 py-1 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-300">Lifetime</span>
+              </div>
+            </div>
+
+            <!-- Time Filters -->
+            <div id="token-stats-filters" class="flex flex-wrap items-center gap-1 p-1 rounded-2xl bg-black/40 border border-white/[0.05] w-full lg:w-fit">
+              <button type="button" data-range="today" id="btn-stats-today" class="token-range-btn stats-range-btn px-3.5 py-2 text-2xs font-bold rounded-xl cursor-pointer">Today</button>
+              <button type="button" data-range="last24h" id="btn-stats-last24h" class="token-range-btn stats-range-btn px-3.5 py-2 text-2xs font-bold rounded-xl cursor-pointer">24h</button>
+              <button type="button" data-range="last7d" id="btn-stats-last7d" class="token-range-btn stats-range-btn px-3.5 py-2 text-2xs font-bold rounded-xl cursor-pointer">7 Days</button>
+              <button type="button" data-range="last30d" id="btn-stats-last30d" class="token-range-btn stats-range-btn px-3.5 py-2 text-2xs font-bold rounded-xl cursor-pointer">30 Days</button>
+              <button type="button" data-range="last60d" id="btn-stats-last60d" class="token-range-btn stats-range-btn px-3.5 py-2 text-2xs font-bold rounded-xl cursor-pointer">60 Days</button>
+              <button type="button" data-range="lifetime" id="btn-stats-lifetime" class="token-range-btn stats-range-btn token-range-active px-3.5 py-2 text-2xs font-bold rounded-xl cursor-pointer">Lifetime</button>
+            </div>
+            <p id="token-stats-range-hint" class="hidden text-[11px] text-amber-200/70 bg-amber-500/5 border border-amber-500/15 rounded-xl px-3 py-2"></p>
+          </div>
+
+          <!-- Loading -->
+          <div id="token-stats-loading" class="hidden relative z-10 flex flex-col items-center justify-center py-16 gap-3">
+            <div class="w-10 h-10 rounded-full border-2 border-orange-500/30 border-t-orange-400 animate-spin"></div>
+            <p class="text-slate-500 text-xs token-loading-pulse">Đang tải thống kê token...</p>
+          </div>
+
+          <!-- Empty -->
+          <div id="token-stats-empty" class="hidden relative z-10 text-center py-14 px-6 rounded-2xl border border-dashed border-white/[0.08] bg-gradient-to-b from-white/[0.02] to-transparent">
+            <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+              <svg class="w-7 h-7 text-orange-400/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <p class="text-base text-slate-300 font-semibold">Chưa có dữ liệu token</p>
+            <p class="text-[11px] text-slate-500 mt-2 max-w-md mx-auto leading-relaxed">Gửi request qua MITM. Token được parse từ <code class="text-orange-300/80">usageMetadata</code> (Gemini) hoặc <code class="text-orange-300/80">usage</code> (OpenAI).</p>
+          </div>
+
+          <!-- Stats Bento Grid -->
+          <div id="token-stats-grid" class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <!-- Hero Cost -->
+            <div class="token-stat-card token-stat-card--cost token-hero-glow lg:col-span-5 rounded-2xl p-6 md:p-7 relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-32 h-32 bg-orange-400/10 rounded-full blur-2xl pointer-events-none"></div>
+              <div class="relative">
+                <div class="flex items-center justify-between mb-4">
+                  <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-orange-300/90 font-mono">Estimated Cost</span>
+                  <span class="text-[9px] px-2 py-0.5 rounded-full bg-black/30 text-slate-500 border border-white/[0.05]">USD</span>
+                </div>
+                <div class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-amber-200 to-orange-400 tracking-tight heading tabular-nums" id="stats-val-cost">~$0.00</div>
+                <div class="mt-5 pt-4 border-t border-white/[0.06] flex items-center justify-between gap-3">
+                  <div>
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider font-mono">Total Tokens</div>
+                    <div class="text-lg font-bold text-slate-100 tabular-nums mt-0.5" id="stats-val-total">0</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider font-mono">Tracked Days</div>
+                    <div class="text-lg font-bold text-slate-200 tabular-nums mt-0.5" id="stats-val-days">0</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mini stat cards -->
+            <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="token-stat-card rounded-2xl p-5">
+                <div class="flex items-start justify-between mb-3">
+                  <span class="w-8 h-8 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  </span>
+                  <span class="text-[9px] text-slate-600 font-mono">REQ</span>
+                </div>
+                <div class="text-2xl font-extrabold text-slate-50 tabular-nums heading" id="stats-val-requests">0</div>
+                <div class="text-[10px] text-slate-500 mt-1">Requests intercepted</div>
+              </div>
+              <div class="token-stat-card rounded-2xl p-5">
+                <div class="flex items-start justify-between mb-3">
+                  <span class="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18"></path></svg>
+                  </span>
+                  <span class="text-[9px] text-cyan-500/80 font-mono">IN</span>
+                </div>
+                <div class="text-2xl font-extrabold text-slate-50 tabular-nums heading" id="stats-val-input">0</div>
+                <div class="text-[10px] text-slate-500 mt-1">Prompt tokens</div>
+              </div>
+              <div class="token-stat-card rounded-2xl p-5">
+                <div class="flex items-start justify-between mb-3">
+                  <span class="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/20 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                  </span>
+                  <span class="text-[9px] text-orange-400/80 font-mono">OUT</span>
+                </div>
+                <div class="text-2xl font-extrabold text-slate-50 tabular-nums heading" id="stats-val-output">0</div>
+                <div class="text-[10px] text-slate-500 mt-1">Completion tokens</div>
+              </div>
+            </div>
+
+            <!-- Token mix bar -->
+            <div class="lg:col-span-12 token-stat-card rounded-2xl p-5">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Token Mix</span>
+                <div class="flex items-center gap-4 text-[10px] font-mono">
+                  <span class="flex items-center gap-1.5 text-cyan-300"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> Input <span id="stats-mix-in-pct" class="text-slate-400">0%</span></span>
+                  <span class="flex items-center gap-1.5 text-orange-300"><span class="w-2 h-2 rounded-full bg-orange-400"></span> Output <span id="stats-mix-out-pct" class="text-slate-400">0%</span></span>
+                </div>
+              </div>
+              <div class="token-mix-track h-3 rounded-full overflow-hidden flex">
+                <div id="stats-mix-in-bar" class="token-mix-in h-full" style="width:0%"></div>
+                <div id="stats-mix-out-bar" class="token-mix-out h-full" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Daily breakdown -->
+          <div id="token-stats-daily-wrap" class="hidden mt-6 relative z-10">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                Chi tiết theo ngày
+                <span id="token-stats-daily-subtitle" class="text-slate-500 font-normal text-xs"></span>
+              </h3>
+            </div>
+            <div class="token-stat-card rounded-2xl overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-[11px] font-mono min-w-[640px]">
+                  <thead>
+                    <tr class="border-b border-white/[0.05] text-[10px] text-slate-500 uppercase tracking-wider bg-black/20">
+                      <th class="py-3 px-4 font-bold">Ngày</th>
+                      <th class="py-3 px-4 font-bold text-right">Requests</th>
+                      <th class="py-3 px-4 font-bold">Volume</th>
+                      <th class="py-3 px-4 font-bold text-right">Input</th>
+                      <th class="py-3 px-4 font-bold text-right">Output</th>
+                      <th class="py-3 px-4 font-bold text-right">Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody id="token-stats-daily-body" class="divide-y divide-white/[0.03] text-slate-300"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pricing reference -->
+          <div class="mt-8 relative z-10">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Bảng giá tham khảo <span class="text-slate-600 font-normal normal-case">(per 1M tokens)</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] font-mono">
+              <div class="token-pricing-card rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="w-6 h-6 rounded-md bg-blue-500/15 flex items-center justify-center text-xs">✦</span>
+                  <span class="text-slate-200 font-bold text-2xs">Gemini Flash / CLI</span>
+                </div>
+                <div class="space-y-1.5 text-slate-400">
+                  <div class="flex justify-between"><span>Input</span><span class="text-cyan-300">$0.075</span></div>
+                  <div class="flex justify-between"><span>Output</span><span class="text-orange-300">$0.300</span></div>
+                </div>
+              </div>
+              <div class="token-pricing-card rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="w-6 h-6 rounded-md bg-purple-500/15 flex items-center justify-center text-xs">◆</span>
+                  <span class="text-slate-200 font-bold text-2xs">Gemini Pro 2.5 / 3.x</span>
+                </div>
+                <div class="space-y-1.5 text-slate-400">
+                  <div class="flex justify-between"><span>Input</span><span class="text-cyan-300">$1.250</span></div>
+                  <div class="flex justify-between"><span>Output</span><span class="text-orange-300">$5.000</span></div>
+                </div>
+              </div>
+              <div class="token-pricing-card rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="w-6 h-6 rounded-md bg-emerald-500/15 flex items-center justify-center text-xs">●</span>
+                  <span class="text-slate-200 font-bold text-2xs">GPT-4o / Claude Sonnet</span>
+                </div>
+                <div class="space-y-1.5 text-slate-400">
+                  <div class="flex justify-between"><span>Input</span><span class="text-cyan-300">$2.500</span></div>
+                  <div class="flex justify-between"><span>Output</span><span class="text-orange-300">$10.000</span></div>
+                </div>
+              </div>
+            </div>
+            <p class="text-[9px] text-slate-600 mt-3 italic">Ước tính tính ngay khi log response — làm tròn 6 chữ số thập phân.</p>
           </div>
         </div>
       </div>
@@ -1367,6 +1640,243 @@
         bindMappingEditorEvents();
         if (!mappingDirty) renderMappingsOnly();
       }
+      if (tab === 'tokens') {
+        resumeTokenStatsPoll();
+      } else {
+        pauseTokenStatsPoll();
+      }
+    }
+
+    // ── Token Stats Range and Retrieval ────────────────────────
+    let tokenStatsData = null;
+    let currentStatsRange = 'lifetime';
+    let tokenStatsPollTimer = null;
+    let tokenStatsFiltersBound = false;
+
+    const TOKEN_RANGE_LABELS = {
+      today: 'Hôm nay (theo giờ local)',
+      last24h: '24 giờ gần nhất',
+      last7d: '7 ngày gần nhất',
+      last30d: '30 ngày gần nhất',
+      last60d: '60 ngày gần nhất',
+      lifetime: 'Lifetime (tất cả)',
+    };
+
+    function bindTokenStatsFilters() {
+      if (tokenStatsFiltersBound) return;
+      const wrap = document.getElementById('token-stats-filters');
+      if (!wrap) return;
+      tokenStatsFiltersBound = true;
+      wrap.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-range]');
+        if (!btn) return;
+        e.preventDefault();
+        setTokenStatsRange(btn.dataset.range);
+      });
+    }
+
+    function dateInTokenRange(dateKey, range) {
+      if (!dateKey || range === 'lifetime') return true;
+      const todayKey = tokenStatsData?.meta?.todayKey || new Date().toLocaleDateString('sv-SE');
+      if (range === 'today') return dateKey === todayKey;
+      if (range === 'last24h') {
+        const limit = Date.now() - 24 * 60 * 60 * 1000;
+        const dayStart = new Date(`${dateKey}T00:00:00`).getTime();
+        return dayStart + 24 * 60 * 60 * 1000 > limit;
+      }
+      const daysMap = { last7d: 7, last30d: 30, last60d: 60 };
+      const days = daysMap[range];
+      if (!days) return true;
+      const cutoff = new Date();
+      cutoff.setHours(0, 0, 0, 0);
+      cutoff.setDate(cutoff.getDate() - (days - 1));
+      const cutoffKey = cutoff.toLocaleDateString('sv-SE');
+      return dateKey >= cutoffKey;
+    }
+
+    function renderTokenDailyBreakdown() {
+      const wrap = document.getElementById('token-stats-daily-wrap');
+      const body = document.getElementById('token-stats-daily-body');
+      const subtitle = document.getElementById('token-stats-daily-subtitle');
+      if (!wrap || !body || !tokenStatsData?.dailyRaw) return;
+
+      const rows = Object.keys(tokenStatsData.dailyRaw)
+        .filter((d) => dateInTokenRange(d, currentStatsRange))
+        .sort()
+        .reverse();
+
+      if (rows.length === 0) {
+        wrap.classList.add('hidden');
+        body.innerHTML = '';
+        return;
+      }
+
+      wrap.classList.remove('hidden');
+      if (subtitle) subtitle.textContent = `· ${rows.length} ngày`;
+
+      const maxVol = rows.reduce((max, dateKey) => {
+        const item = tokenStatsData.dailyRaw[dateKey] || {};
+        const vol = (item.inputTokens || 0) + (item.outputTokens || 0);
+        return Math.max(max, vol);
+      }, 0);
+
+      body.innerHTML = rows.map((dateKey) => {
+        const item = tokenStatsData.dailyRaw[dateKey] || {};
+        const isToday = dateKey === tokenStatsData.meta?.todayKey;
+        const vol = (item.inputTokens || 0) + (item.outputTokens || 0);
+        const barPct = maxVol > 0 ? Math.max(4, Math.round((vol / maxVol) * 100)) : 4;
+        return `<tr class="hover:bg-white/[0.02] transition ${isToday ? 'bg-orange-500/[0.05]' : ''}">
+          <td class="py-3 px-4 whitespace-nowrap">
+            <span class="${isToday ? 'text-orange-300 font-bold' : 'text-slate-300'}">${dateKey}</span>
+            ${isToday ? '<span class="ml-2 text-[9px] px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-300 border border-orange-500/20">today</span>' : ''}
+          </td>
+          <td class="py-3 px-4 text-right text-slate-200">${formatNumber(item.requests || 0)}</td>
+          <td class="py-3 px-4 min-w-[120px]">
+            <div class="flex items-center gap-2">
+              <div class="flex-1 h-1.5 rounded-full bg-black/40 overflow-hidden">
+                <div class="token-daily-bar h-full" style="width:${barPct}%"></div>
+              </div>
+              <span class="text-[9px] text-slate-500 w-8 text-right">${formatCompactNumber(vol)}</span>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-right text-cyan-300/90">${formatCompactNumber(item.inputTokens || 0)}</td>
+          <td class="py-3 px-4 text-right text-orange-300/90">${formatCompactNumber(item.outputTokens || 0)}</td>
+          <td class="py-3 px-4 text-right text-amber-300 font-semibold">$${Number(item.cost || 0).toFixed(4)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function resumeTokenStatsPoll() {
+      bindTokenStatsFilters();
+      if (tokenStatsPollTimer) clearInterval(tokenStatsPollTimer);
+      loadTokenStats();
+      tokenStatsPollTimer = setInterval(loadTokenStats, 10000);
+    }
+
+    function pauseTokenStatsPoll() {
+      if (tokenStatsPollTimer) {
+        clearInterval(tokenStatsPollTimer);
+        tokenStatsPollTimer = null;
+      }
+    }
+
+    async function loadTokenStats() {
+      const loadingEl = document.getElementById('token-stats-loading');
+      const gridEl = document.getElementById('token-stats-grid');
+      const emptyEl = document.getElementById('token-stats-empty');
+      try {
+        if (loadingEl && !tokenStatsData) loadingEl.classList.remove('hidden');
+        const res = await fetch('/api/admin/token-stats');
+        const data = await res.json();
+        if (data.success && data.stats) {
+          tokenStatsData = data.stats;
+          updateTokenStatsUI();
+        } else if (!tokenStatsData) {
+          showToast('Không tải được token stats', 'error');
+        }
+      } catch (err) {
+        if (!tokenStatsData) showToast('Lỗi mạng token stats: ' + err.message, 'error');
+      } finally {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (gridEl && emptyEl) {
+          const d = tokenStatsData?.[currentStatsRange] || { requests: 0 };
+          const hasData = (d.requests || 0) > 0;
+          gridEl.classList.toggle('hidden', !hasData);
+          emptyEl.classList.toggle('hidden', hasData);
+        }
+      }
+    }
+
+    function setTokenStatsRange(range) {
+      if (!TOKEN_RANGE_LABELS[range]) return;
+      currentStatsRange = range;
+
+      document.querySelectorAll('.stats-range-btn').forEach((btn) => {
+        btn.classList.remove('token-range-active');
+      });
+      const activeBtn = document.getElementById(`btn-stats-${range}`);
+      if (activeBtn) activeBtn.classList.add('token-range-active');
+
+      const labelEl = document.getElementById('token-stats-range-label');
+      if (labelEl) labelEl.textContent = TOKEN_RANGE_LABELS[range];
+
+      updateTokenStatsUI();
+    }
+    window.setTokenStatsRange = setTokenStatsRange;
+
+    function formatNumber(num) {
+      if (num == null) return '0';
+      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    function formatCompactNumber(num) {
+      const n = Number(num) || 0;
+      if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2).replace(/\.00$/, '') + 'B';
+      if (n >= 1_000_000) return (n / 1_000_000).toFixed(2).replace(/\.00$/, '') + 'M';
+      if (n >= 10_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+      return formatNumber(n);
+    }
+
+    function updateTokenStatsUI() {
+      const labelEl = document.getElementById('token-stats-range-label');
+      const hintEl = document.getElementById('token-stats-range-hint');
+      if (labelEl) labelEl.textContent = TOKEN_RANGE_LABELS[currentStatsRange] || currentStatsRange;
+
+      if (!tokenStatsData) return;
+      const data = tokenStatsData[currentStatsRange] || { requests: 0, inputTokens: 0, outputTokens: 0, cost: 0 };
+      const gridEl = document.getElementById('token-stats-grid');
+      const emptyEl = document.getElementById('token-stats-empty');
+      const hasData = (data.requests || 0) > 0;
+      if (gridEl) gridEl.classList.toggle('hidden', !hasData);
+      if (emptyEl) emptyEl.classList.toggle('hidden', hasData);
+
+      if (hintEl) {
+        const trackedDays = tokenStatsData.meta?.trackedDays || 0;
+        const todayKey = tokenStatsData.meta?.todayKey;
+        if (currentStatsRange === 'today' && !hasData && (tokenStatsData.lifetime?.requests || 0) > 0) {
+          hintEl.textContent = `Không có request hôm nay (${todayKey}). Thử Lifetime hoặc khoảng ngày khác.`;
+          hintEl.classList.remove('hidden');
+        } else if (trackedDays <= 1 && hasData) {
+          hintEl.textContent = 'Chỉ có dữ liệu 1 ngày — các khoảng thời gian có thể hiển thị giống nhau.';
+          hintEl.classList.remove('hidden');
+        } else {
+          hintEl.classList.add('hidden');
+          hintEl.textContent = '';
+        }
+      }
+
+      const inputTok = data.inputTokens || 0;
+      const outputTok = data.outputTokens || 0;
+      const totalTok = inputTok + outputTok;
+      const inPct = totalTok > 0 ? Math.round((inputTok / totalTok) * 100) : 0;
+      const outPct = totalTok > 0 ? 100 - inPct : 0;
+
+      const reqEl = document.getElementById('stats-val-requests');
+      const inEl = document.getElementById('stats-val-input');
+      const outEl = document.getElementById('stats-val-output');
+      const costEl = document.getElementById('stats-val-cost');
+      const totalEl = document.getElementById('stats-val-total');
+      const daysEl = document.getElementById('stats-val-days');
+      const mixInBar = document.getElementById('stats-mix-in-bar');
+      const mixOutBar = document.getElementById('stats-mix-out-bar');
+      const mixInPct = document.getElementById('stats-mix-in-pct');
+      const mixOutPct = document.getElementById('stats-mix-out-pct');
+
+      if (reqEl) reqEl.textContent = formatNumber(data.requests);
+      if (inEl) inEl.textContent = formatCompactNumber(inputTok);
+      if (outEl) outEl.textContent = formatCompactNumber(outputTok);
+      if (costEl) costEl.textContent = `~$${Number(data.cost || 0).toFixed(2)}`;
+      if (totalEl) totalEl.textContent = formatCompactNumber(totalTok);
+      if (daysEl) {
+        const daysInRange = Object.keys(tokenStatsData.dailyRaw || {}).filter((d) => dateInTokenRange(d, currentStatsRange)).length;
+        daysEl.textContent = String(daysInRange);
+      }
+      if (mixInBar) mixInBar.style.width = `${inPct}%`;
+      if (mixOutBar) mixOutBar.style.width = `${outPct}%`;
+      if (mixInPct) mixInPct.textContent = `${inPct}%`;
+      if (mixOutPct) mixOutPct.textContent = `${outPct}%`;
+
+      renderTokenDailyBreakdown();
     }
 
     // ── Console Logs ───────────────────────────────────────────

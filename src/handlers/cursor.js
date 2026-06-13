@@ -1,5 +1,5 @@
 const { err } = require("../logger");
-const { prepareClientRequest, fetchRouter, pipeSSE } = require("./base");
+const { prepareClientRequest, fetchRouter, pipeSSE, setLogUpstreamModel } = require("./base");
 
 /**
  * Cursor MITM — auto-detect format + client converter → router → convert response.
@@ -9,6 +9,7 @@ async function intercept(req, res, bodyBuffer, mappedModel, passthrough) {
     const ctx = await prepareClientRequest("cursor", req, bodyBuffer, mappedModel, {
       via: "mitm-cursor",
     });
+    setLogUpstreamModel(res, ctx.body?.model);
     const routerRes = await fetchRouter(
       ctx.body,
       ctx.routerPath || "/v1/chat/completions",

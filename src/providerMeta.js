@@ -70,7 +70,7 @@ const PROVIDER_META = {
     oauthDriver: "google",
   },
   antigravity: {
-    label: "Antigravity", icon: "🚀", desc: "Google account (Antigravity)",
+    label: "Antigravity", icon: "🚀", desc: "Claude, GPT-OSS, Gemini — Google unified gateway",
     defaultBaseUrl: "https://cloudcode-pa.googleapis.com",
     authModes: ["oauth"],
     oauthDriver: "google",

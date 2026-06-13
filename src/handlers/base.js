@@ -199,4 +199,11 @@ async function pipeSSE(routerRes, res, dumper, converterCtx = null) {
   }
 }
 
-module.exports = { prepareClientRequest, fetchRouter, pipeSSE };
+/** Ghi model thực tế gửi lên provider vào request log (gắn từ server.js). */
+function setLogUpstreamModel(res, model) {
+  if (res?._mitmLogEntry && model) {
+    res._mitmLogEntry.upstreamModel = String(model);
+  }
+}
+
+module.exports = { prepareClientRequest, fetchRouter, pipeSSE, setLogUpstreamModel };

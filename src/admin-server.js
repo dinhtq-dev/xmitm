@@ -822,6 +822,19 @@ async function handleRequest(req, res) {
       return;
     }
 
+    // ── Token Stats (Requests, Token usage, Estimated cost) ─────────────────────────
+    if (pathname === "/api/admin/token-stats" && req.method === "GET") {
+      try {
+        const { getSummaryStats } = require("./tokenTracker");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, stats: getSummaryStats() }));
+      } catch (e) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+      return;
+    }
+
     // ── Client API Keys (Create/List/Delete API Keys for Client) ────────────────────
     if (pathname === "/api/admin/client-keys" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
@@ -1113,15 +1126,18 @@ async function handleRequest(req, res) {
         const alias = String(body.alias || modelId).trim();
         if (!modelId) throw new Error("Thieu modelId");
         const aliases = getAliases();
-        if (!aliases.cli || typeof aliases.cli !== "object") aliases.cli = {};
-        aliases.cli[alias] = modelId;
+        const aliasTool = pid === "antigravity" ? "antigravity" : "cli";
+        if (!aliases[aliasTool] || typeof aliases[aliasTool] !== "object") aliases[aliasTool] = {};
+        aliases[aliasTool][alias] = modelId;
         setAliases(aliases);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({
           success: true,
           from: alias,
           to: modelId,
-          cliMappings: aliases.cli,
+          aliasTool,
+          aliasMappings: aliases[aliasTool],
+          cliMappings: aliases[aliasTool],
         }));
       } catch (e) {
         res.writeHead(400, { "Content-Type": "application/json" });
@@ -1134,7 +1150,7 @@ async function handleRequest(req, res) {
       const data = loadProviders();
       const refresh = url.searchParams.get("refresh") === "1";
       const singleProvider = url.searchParams.get("provider");
-      if (url.searchParams.get("models") === "1" && singleProvider === "gemini-cli") {
+      if (url.searchParams.get("models") === "1" && (singleProvider === "gemini-cli" || singleProvider === "antigravity")) {
         try {
           const oauthIndex = parseInt(url.searchParams.get("oauthIndex") || "0", 10) || 0;
           const modelData = await listGeminiCliModels({ providerId: singleProvider, oauthIndex, refresh });
@@ -1199,7 +1215,7 @@ async function handleRequest(req, res) {
       const bodyBuffer = await collectBodyRaw(req);
       try {
         const incoming = JSON.parse(bodyBuffer.toString());
-        if (incoming.action === "testModel" && incoming.providerId === "gemini-cli") {
+        if (incoming.action === "testModel" && (incoming.providerId === "gemini-cli" || incoming.providerId === "antigravity")) {
           const result = await testGeminiCliModel({
             providerId: incoming.providerId,
             modelId: incoming.modelId,
@@ -1209,20 +1225,23 @@ async function handleRequest(req, res) {
           res.end(JSON.stringify({ success: result.ok, ...result }));
           return;
         }
-        if (incoming.action === "addModel" && incoming.providerId === "gemini-cli") {
+        if (incoming.action === "addModel" && (incoming.providerId === "gemini-cli" || incoming.providerId === "antigravity")) {
           const modelId = String(incoming.modelId || "").trim();
           const alias = String(incoming.alias || modelId).trim();
           if (!modelId) throw new Error("Thieu modelId");
           const aliases = getAliases();
-          if (!aliases.cli || typeof aliases.cli !== "object") aliases.cli = {};
-          aliases.cli[alias] = modelId;
+          const aliasTool = incoming.providerId === "antigravity" ? "antigravity" : "cli";
+          if (!aliases[aliasTool] || typeof aliases[aliasTool] !== "object") aliases[aliasTool] = {};
+          aliases[aliasTool][alias] = modelId;
           setAliases(aliases);
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({
             success: true,
             from: alias,
             to: modelId,
-            cliMappings: aliases.cli,
+            aliasTool,
+            aliasMappings: aliases[aliasTool],
+            cliMappings: aliases[aliasTool],
           }));
           return;
         }

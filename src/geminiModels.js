@@ -12,7 +12,7 @@ const CODE_ASSIST_BASE = "https://cloudcode-pa.googleapis.com";
 const API_VERSION = "v1internal";
 const TEST_TIMEOUT_MS = 30000;
 
-/** Model mac dinh theo Gemini CLI */
+/** Model mac dinh theo Gemini CLI (chi Gemini) */
 const DEFAULT_GEMINI_CLI_MODELS = [
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
@@ -25,7 +25,40 @@ const DEFAULT_GEMINI_CLI_MODELS = [
   "gemini-2.0-flash",
 ];
 
-/** Map ten model AG / placeholder → model ID (chi downgrade non-thinking aliases) */
+/** Catalog Antigravity gateway — Claude, GPT-OSS, Gemini (Google unified API) */
+const DEFAULT_ANTIGRAVITY_MODELS = [
+  "claude-sonnet-4-6",
+  "claude-opus-4-6-thinking",
+  "gpt-oss-120b-medium",
+  "gemini-3.5-flash-low",
+  "gemini-3-flash-agent",
+  "gemini-3-flash",
+  "gemini-3-pro-high",
+  "gemini-3-pro-low",
+  "gemini-3.1-pro-high",
+  "gemini-3.1-pro-low",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-pro",
+];
+
+function getBuiltinModelsForProvider(providerId) {
+  return providerId === "antigravity" ? DEFAULT_ANTIGRAVITY_MODELS : DEFAULT_GEMINI_CLI_MODELS;
+}
+
+function getAntigravityModelFamily(modelId) {
+  const m = String(modelId || "");
+  if (/^claude-/i.test(m)) return "claude";
+  if (/^gpt-oss/i.test(m)) return "gpt";
+  if (/^gemini-/i.test(m)) return "gemini";
+  return "other";
+}
+
+function isAntigravityNativeModel(model) {
+  return getAntigravityModelFamily(model) !== "other";
+}
+
+/** Map placeholder Gemini CLI — khong map Claude/GPT (Antigravity giu nguyen) */
 const GEMINI_MODEL_ALIASES = {
   antigravity: "gemini-2.5-flash-lite",
   "gemini-default": "gemini-2.5-flash-lite",
@@ -37,9 +70,6 @@ const GEMINI_MODEL_ALIASES = {
   "gemini-3.1-pro-low": "gemini-3.1-pro-preview",
   "gemini-3.1-pro-high": "gemini-3.1-pro-preview",
   "gemini-pro-agent": "gemini-3.1-pro-preview",
-  "claude-sonnet-4-6": "gemini-2.5-flash",
-  "claude-opus-4-6-thinking": "gemini-2.5-pro",
-  "gpt-oss-120b-medium": "gemini-2.5-flash",
 };
 
 /** Thu tu fallback khi model bi 429 */
@@ -237,16 +267,26 @@ function resolveOAuthConnection(providerId, oauthIndex = 0) {
   return rows[idx];
 }
 
-function mergeModelEntries({ quotaBuckets = [], cliMappings = {} }) {
-  const byId = new Map();
+function getAliasToolForProvider(providerId) {
+  return providerId === "antigravity" ? "antigravity" : "cli";
+}
 
-  for (const id of DEFAULT_GEMINI_CLI_MODELS) {
+function getAliasMappingsForProvider(providerId) {
+  return getMitmAlias(getAliasToolForProvider(providerId)) || {};
+}
+
+function mergeModelEntries({ quotaBuckets = [], aliasMappings = {}, providerId = "gemini-cli" }) {
+  const byId = new Map();
+  const builtin = getBuiltinModelsForProvider(providerId);
+
+  for (const id of builtin) {
     byId.set(id, {
       id,
+      family: providerId === "antigravity" ? getAntigravityModelFamily(id) : "gemini",
       percent: null,
       resetCountdown: "",
-      inCliMapping: Object.entries(cliMappings).some(([, to]) => to === id)
-        || Object.prototype.hasOwnProperty.call(cliMappings, id),
+      inCliMapping: Object.entries(aliasMappings).some(([, to]) => to === id)
+        || Object.prototype.hasOwnProperty.call(aliasMappings, id),
       source: "builtin",
     });
   }
@@ -256,6 +296,7 @@ function mergeModelEntries({ quotaBuckets = [], cliMappings = {} }) {
     if (!id) continue;
     const prev = byId.get(id) || {
       id,
+      family: providerId === "antigravity" ? getAntigravityModelFamily(id) : "gemini",
       percent: null,
       resetCountdown: "",
       inCliMapping: false,
@@ -263,12 +304,13 @@ function mergeModelEntries({ quotaBuckets = [], cliMappings = {} }) {
     };
     byId.set(id, {
       ...prev,
+      family: prev.family || (providerId === "antigravity" ? getAntigravityModelFamily(id) : "gemini"),
       percent: b.percent != null ? b.percent : prev.percent,
       resetCountdown: b.resetCountdown || prev.resetCountdown,
       source: prev.source === "builtin" ? "builtin+quota" : "quota",
       inCliMapping: prev.inCliMapping
-        || Object.entries(cliMappings).some(([, to]) => to === id)
-        || Object.prototype.hasOwnProperty.call(cliMappings, id),
+        || Object.entries(aliasMappings).some(([, to]) => to === id)
+        || Object.prototype.hasOwnProperty.call(aliasMappings, id),
     });
   }
 
@@ -276,7 +318,8 @@ function mergeModelEntries({ quotaBuckets = [], cliMappings = {} }) {
 }
 
 async function listGeminiCliModels({ providerId = "gemini-cli", oauthIndex = 0, refresh = false } = {}) {
-  const cliMappings = getMitmAlias("cli") || {};
+  const aliasTool = getAliasToolForProvider(providerId);
+  const aliasMappings = getAliasMappingsForProvider(providerId);
   const conn = resolveOAuthConnection(providerId, oauthIndex);
   let quotaBuckets = [];
 
@@ -293,9 +336,11 @@ async function listGeminiCliModels({ providerId = "gemini-cli", oauthIndex = 0, 
 
   return {
     provider: providerId,
-    models: mergeModelEntries({ quotaBuckets, cliMappings }),
-    cliMappings,
-    hasOAuth: !!conn,
+    models: mergeModelEntries({ quotaBuckets, aliasMappings, providerId }),
+    aliasTool,
+    aliasMappings,
+    cliMappings: aliasMappings,
+    hasOAuth: !!conn?.id,
   };
 }
 
@@ -321,14 +366,21 @@ async function testGeminiCliModel({
       providerId,
     });
 
+    const rawModel = String(modelId);
+    const effectiveModel = providerId === "antigravity"
+      ? (getAntigravityModelFamily(rawModel) === "gemini"
+        ? resolveAntigravityBackendModel({ model: rawModel })
+        : rawModel)
+      : resolveGeminiCliModel(rawModel);
+
     const body = {
       project: String(projectId),
-      model: String(modelId),
+      model: effectiveModel,
       request: {
         contents: [{ role: "user", parts: [{ text: "ping" }] }],
         generationConfig: { maxOutputTokens: 8 },
       },
-      userAgent: "gemini-cli",
+      userAgent: providerId === "antigravity" ? "antigravity" : "gemini-cli",
       requestId: `xmitm-test-${Date.now()}`,
       requestType: "agent",
     };
@@ -383,6 +435,10 @@ async function testGeminiCliModel({
 
 module.exports = {
   DEFAULT_GEMINI_CLI_MODELS,
+  DEFAULT_ANTIGRAVITY_MODELS,
+  getBuiltinModelsForProvider,
+  getAntigravityModelFamily,
+  isAntigravityNativeModel,
   GEMINI_MODEL_ALIASES,
   GEMINI_FALLBACK_CHAIN,
   resolveGeminiCliModel,

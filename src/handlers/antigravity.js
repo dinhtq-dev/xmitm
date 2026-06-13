@@ -1,6 +1,6 @@
 const { err, createResponseDumper } = require("../logger");
 const { IS_DEV } = require("../config");
-const { prepareClientRequest, fetchRouter, pipeSSE } = require("./base");
+const { prepareClientRequest, fetchRouter, pipeSSE, setLogUpstreamModel } = require("./base");
 
 /**
  * Intercept Antigravity request — client converter → router → client response converter (stream).
@@ -10,6 +10,7 @@ async function intercept(req, res, bodyBuffer, mappedModel, passthrough) {
   const dumper = IS_DEV ? createResponseDumper(req, "intercept-antigravity") : null;
   try {
     const ctx = await prepareClientRequest("antigravity", req, bodyBuffer, mappedModel);
+    setLogUpstreamModel(res, ctx.body?.model);
     const routerRes = await fetchRouter(
       ctx.body,
       ctx.routerPath || "/v1/chat/completions",

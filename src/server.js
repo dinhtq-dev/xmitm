@@ -12,6 +12,7 @@ const { DATA_DIR, MITM_DIR } = require("./paths");
 const { getCertForDomain } = require("./cert/generate");
 const { getMitmAlias } = require("./dbReader");
 const { init: initLogStore, addLog } = require("./logStore");
+const { extractUsageFromText } = require("./tokenTracker");
 const { initConfig } = require("./configStore");
 const { bypassCorruptedThoughtSignatures } = require("./geminiModels");
 const LOCAL_PORT = 443;
@@ -88,10 +89,6 @@ function collectBodyRaw(req) {
   });
 }
 
-function isGeminiFamilyModel(model) {
-  return /^gemini-/i.test(String(model || "").trim());
-}
-
 function isAntigravityNativeBody(buf) {
   try {
     const p = JSON.parse(buf.toString());
@@ -101,9 +98,20 @@ function isAntigravityNativeBody(buf) {
   }
 }
 
-/** Gemini native + OAuth client — passthrough de giu trajectory/project, khong thay token */
-function shouldPassthroughAntigravityGemini(model, bodyBuffer) {
-  return isGeminiFamilyModel(model) && isAntigravityNativeBody(bodyBuffer);
+function modelFamilyKey(model) {
+  const m = String(model || "").trim();
+  if (/^claude-/i.test(m)) return "claude";
+  if (/^gpt-oss/i.test(m)) return "gpt";
+  if (/^gemini-/i.test(m)) return "gemini";
+  return "other";
+}
+
+/** Native AG request — passthrough neu khong redirect sang family khac (giu Claude/GPT/Gemini that) */
+function shouldPassthroughAntigravityNative(model, bodyBuffer, mappedModel) {
+  if (!isAntigravityNativeBody(bodyBuffer)) return false;
+  if (!model) return false;
+  if (!mappedModel || mappedModel === model) return true;
+  return modelFamilyKey(model) === modelFamilyKey(mappedModel);
 }
 
 // Extract model from URL path (Gemini), body (OpenAI/Anthropic), or Kiro conversationState
@@ -267,12 +275,17 @@ async function handleRequest(req, res) {
       tool: tool,
       model: null,
       mappedModel: null,
+      upstreamModel: null,
+      promptTokens: null,
+      completionTokens: null,
+      totalTokens: null,
       action: "passthrough",
       requestBody: bodyBuffer.toString("utf8").substring(0, 500),
       responseStatus: null,
       responseBody: null,
       duration: Date.now() - startTime,
     };
+    res._mitmLogEntry = entry;
 
     const _origEnd = res.end.bind(res);
     res.end = (chunk, ...args) => {
@@ -327,7 +340,29 @@ async function handleRequest(req, res) {
         entry.responseBody = bodyText.substring(0, MAX_BODY_CAPTURE);
         entry.responseStatus = capturedStatus;
         entry.duration = Date.now() - capturedStart;
+
+        const usage = extractUsageFromText(bodyText);
+        if (usage) {
+          entry.promptTokens = usage.input;
+          entry.completionTokens = usage.output;
+          entry.totalTokens = usage.input + usage.output;
+        }
+        if (!entry.upstreamModel) {
+          entry.upstreamModel = entry.mappedModel || entry.model || null;
+        }
+
         try { addLog({ ...entry }); } catch {}
+
+        // Track token usage and cost
+        try {
+          const { trackRequest } = require("./tokenTracker");
+          trackRequest({
+            model: entry.upstreamModel || entry.mappedModel || entry.model,
+            bodyText,
+          });
+        } catch (trackErr) {
+          // Silent catch to prevent proxy break
+        }
       });
 
       return result;
@@ -347,6 +382,7 @@ async function handleRequest(req, res) {
     
     entry.model = model;
     entry.mappedModel = mappedModel;
+    entry.upstreamModel = mappedModel || model || null;
     entry.action = mappedModel ? "intercepted" : "passthrough";
 
     if (!mappedModel && tool !== "cursor") {
@@ -361,7 +397,7 @@ async function handleRequest(req, res) {
       return handlers[tool].intercept(req, res, bodyBuffer, mappedModel, passthrough);
     }
 
-    if (tool === "antigravity" && shouldPassthroughAntigravityGemini(model, bodyBuffer)) {
+    if (tool === "antigravity" && shouldPassthroughAntigravityNative(model, bodyBuffer, mappedModel)) {
       const repaired = bypassCorruptedThoughtSignatures(bodyBuffer);
       if (repaired.changed) {
         log(`[DEBUG] Repair thought_signature trong trajectory (skip validator)`);
@@ -370,8 +406,9 @@ async function handleRequest(req, res) {
           req.headers["content-length"] = String(bodyBuffer.length);
         }
       }
-      log(`[DEBUG] Passthrough gemini native: ${model} (giu OAuth + trajectory client)`);
-      entry.action = "passthrough-gemini-native";
+      log(`[DEBUG] Passthrough antigravity native: ${model} (giu OAuth + model ${mappedModel || model})`);
+      entry.action = "passthrough-antigravity-native";
+      entry.upstreamModel = model || mappedModel || null;
       return passthrough(req, res, bodyBuffer);
     }
 

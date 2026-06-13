@@ -1,6 +1,6 @@
 const { err } = require("../logger");
 const { IS_DEV } = require("../config");
-const { fetchRouter } = require("./base");
+const { fetchRouter, setLogUpstreamModel } = require("./base");
 const fs = require("fs");
 const path = require("path");
 
@@ -376,6 +376,7 @@ async function intercept(req, res, bodyBuffer, mappedModel) {
       // Forward tools so Claude uses structured tool_calls instead of XML text fallback
       ...(tools.length > 0 && { tools, tool_choice: "auto" }),
     };
+    setLogUpstreamModel(res, openaiBody.model);
 
     // 3: Forward to 9router
     const routerRes = await fetchRouter(openaiBody, "/v1/chat/completions", req.headers);

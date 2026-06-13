@@ -31,7 +31,7 @@ function init() {
 
 /**
  * Add a log entry.
- * @param {object} entry - { method, url, host, tool, model, mappedModel, action, requestBody, responseStatus, responseBody, duration }
+ * @param {object} entry - { method, url, host, tool, model, mappedModel, upstreamModel, promptTokens, completionTokens, totalTokens, action, requestBody, responseStatus, responseBody, duration }
  */
 function addLog(entry) {
   const logEntry = {
