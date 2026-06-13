@@ -1837,8 +1837,8 @@
       return '';
     }
 
-    /** Tạm thời chỉ gemini-cli — các provider khác đã comment */
-    const ACTIVE_PROVIDER_IDS = new Set(['gemini-cli']);
+    /** Tạm thời chỉ gemini-cli và antigravity */
+    const ACTIVE_PROVIDER_IDS = new Set(['gemini-cli', 'antigravity']);
     const KNOWN_PROVIDERS_FALLBACK = [
       // { id: 'openai', ... },
       // { id: 'chatgpt', ... },
@@ -1852,7 +1852,7 @@
       // { id: 'perplexity', ... },
       // { id: 'gemini', label: 'Google Gemini', ... AI Studio API key },
       { id: 'gemini-cli', label: 'Gemini CLI (OAuth)', icon: '✨', desc: 'Gemini CLI API — cloudcode-pa', defaultBaseUrl: 'https://cloudcode-pa.googleapis.com', authModes: ['oauth'] },
-      // { id: 'antigravity', ... },
+      { id: 'antigravity', label: 'Antigravity', icon: '🚀', desc: 'Google account (Antigravity)', defaultBaseUrl: 'https://cloudcode-pa.googleapis.com', authModes: ['oauth'], oauthDriver: 'google' },
       // { id: 'copilot', ... },
       // { id: 'cursor', ... },
       // { id: 'opencode', ... },

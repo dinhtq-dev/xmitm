@@ -39,6 +39,7 @@ const MODEL_PATTERNS = {
   antigravity: [
     { match: /3\.?5.*flash.*high/i,      alias: "gemini-3.5-flash-high" },
     { match: /3\.?5.*flash.*low/i,       alias: "gemini-3.5-flash-low" },
+    { match: /3\.?5.*flash.*medium/i,    alias: "gemini-3.5-flash" },
     { match: /3\.?5.*flash/i,            alias: "gemini-3.5-flash" },
     { match: /flash.*lite/i,             alias: "gemini-3.5-flash" },
     { match: /pro.*low|low.*pro/i,       alias: "gemini-3.1-pro-low" },

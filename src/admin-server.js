@@ -1004,9 +1004,9 @@ async function handleRequest(req, res) {
       const listModels = url.searchParams.get("models") === "1";
       const pid = url.searchParams.get("provider") || "gemini-cli";
       if (listModels) {
-        if (pid !== "gemini-cli") {
+        if (pid !== "gemini-cli" && pid !== "antigravity") {
           res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: false, error: "Models list chi ho tro gemini-cli" }));
+          res.end(JSON.stringify({ success: false, error: "Models list chi ho tro gemini-cli va antigravity" }));
           return;
         }
         try {
@@ -1057,9 +1057,9 @@ async function handleRequest(req, res) {
     const modelsListMatch = pathname.match(/^\/api\/admin\/providers\/([^/]+)\/models$/);
     if (modelsListMatch && req.method === "GET") {
       const pid = decodeURIComponent(modelsListMatch[1]);
-      if (pid !== "gemini-cli") {
+      if (pid !== "gemini-cli" && pid !== "antigravity") {
         res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: "Models list chi ho tro gemini-cli" }));
+        res.end(JSON.stringify({ success: false, error: "Models list chi ho tro gemini-cli va antigravity" }));
         return;
       }
       try {
@@ -1078,9 +1078,9 @@ async function handleRequest(req, res) {
     const modelsTestMatch = pathname.match(/^\/api\/admin\/providers\/([^/]+)\/models\/test$/);
     if (modelsTestMatch && req.method === "POST") {
       const pid = decodeURIComponent(modelsTestMatch[1]);
-      if (pid !== "gemini-cli") {
+      if (pid !== "gemini-cli" && pid !== "antigravity") {
         res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: "Test model chi ho tro gemini-cli" }));
+        res.end(JSON.stringify({ success: false, error: "Test model chi ho tro gemini-cli va antigravity" }));
         return;
       }
       try {
@@ -1102,9 +1102,9 @@ async function handleRequest(req, res) {
     const modelsAddMatch = pathname.match(/^\/api\/admin\/providers\/([^/]+)\/models\/add$/);
     if (modelsAddMatch && req.method === "POST") {
       const pid = decodeURIComponent(modelsAddMatch[1]);
-      if (pid !== "gemini-cli") {
+      if (pid !== "gemini-cli" && pid !== "antigravity") {
         res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: "Add model chi ho tro gemini-cli" }));
+        res.end(JSON.stringify({ success: false, error: "Add model chi ho tro gemini-cli va antigravity" }));
         return;
       }
       try {

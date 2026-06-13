@@ -69,12 +69,12 @@ const PROVIDER_META = {
     authModes: ["oauth"],
     oauthDriver: "google",
   },
-  // antigravity: {
-  //   label: "Antigravity", icon: "🚀", desc: "Google account (Antigravity)",
-  //   defaultBaseUrl: "https://cloudcode-pa.googleapis.com",
-  //   authModes: ["oauth"],
-  //   oauthDriver: "google",
-  // },
+  antigravity: {
+    label: "Antigravity", icon: "🚀", desc: "Google account (Antigravity)",
+    defaultBaseUrl: "https://cloudcode-pa.googleapis.com",
+    authModes: ["oauth"],
+    oauthDriver: "google",
+  },
   // copilot: {
   //   label: "GitHub Copilot", icon: "🐙", desc: "GitHub OAuth",
   //   defaultBaseUrl: "https://api.github.com",

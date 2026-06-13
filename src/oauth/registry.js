@@ -48,7 +48,7 @@ const DRIVERS = {
 
 /** Tạm thời chỉ gemini-cli — các provider OAuth khác đã comment */
 const PROVIDER_OAUTH = {
-  // antigravity: { driver: "google", scopes: DRIVERS.google.defaultScopes },
+  antigravity: { driver: "google", scopes: DRIVERS.google.defaultScopes },
   "gemini-cli": { driver: "google", scopes: DRIVERS.google.defaultScopes },
   // copilot: { driver: "github", scopes: ["read:user", "user:email"] },
   // claude: { driver: "anthropic", scopes: DRIVERS.anthropic.defaultScopes },

@@ -13,6 +13,7 @@ const { getCertForDomain } = require("./cert/generate");
 const { getMitmAlias } = require("./dbReader");
 const { init: initLogStore, addLog } = require("./logStore");
 const { initConfig } = require("./configStore");
+const { bypassCorruptedThoughtSignatures } = require("./geminiModels");
 const LOCAL_PORT = 443;
 const HTTP_SHIM_PORT = 20129;
 const IS_WIN = process.platform === "win32";
@@ -85,6 +86,24 @@ function collectBodyRaw(req) {
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
+}
+
+function isGeminiFamilyModel(model) {
+  return /^gemini-/i.test(String(model || "").trim());
+}
+
+function isAntigravityNativeBody(buf) {
+  try {
+    const p = JSON.parse(buf.toString());
+    return !!(p?.request?.contents || p?.contents);
+  } catch {
+    return false;
+  }
+}
+
+/** Gemini native + OAuth client — passthrough de giu trajectory/project, khong thay token */
+function shouldPassthroughAntigravityGemini(model, bodyBuffer) {
+  return isGeminiFamilyModel(model) && isAntigravityNativeBody(bodyBuffer);
 }
 
 // Extract model from URL path (Gemini), body (OpenAI/Anthropic), or Kiro conversationState
@@ -340,6 +359,20 @@ async function handleRequest(req, res) {
       entry.tool = "cursor";
       entry.action = mappedModel ? "intercepted" : "intercepted-unmapped";
       return handlers[tool].intercept(req, res, bodyBuffer, mappedModel, passthrough);
+    }
+
+    if (tool === "antigravity" && shouldPassthroughAntigravityGemini(model, bodyBuffer)) {
+      const repaired = bypassCorruptedThoughtSignatures(bodyBuffer);
+      if (repaired.changed) {
+        log(`[DEBUG] Repair thought_signature trong trajectory (skip validator)`);
+        bodyBuffer = repaired.buffer;
+        if (req.headers["content-length"]) {
+          req.headers["content-length"] = String(bodyBuffer.length);
+        }
+      }
+      log(`[DEBUG] Passthrough gemini native: ${model} (giu OAuth + trajectory client)`);
+      entry.action = "passthrough-gemini-native";
+      return passthrough(req, res, bodyBuffer);
     }
 
     log(`[DEBUG] Intercepting ${tool}: mapped ${model} -> ${mappedModel}`);

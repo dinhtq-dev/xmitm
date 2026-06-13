@@ -1,11 +1,13 @@
 const { registerProviderConverter } = require("../registry");
 const { loadProviders } = require("../../authStore");
 const { getAntigravityProjectId } = require("../../configStore");
+const { ensureGeminiProjectId } = require("../../geminiQuota");
 const {
   openAiBodyToAntigravity,
   geminiResponseToOpenAi,
   geminiStreamChunkToOpenAiSse,
 } = require("../formats/openai-gemini");
+const { resolveGeminiCliModel } = require("../../geminiModels");
 
 function resolveAntigravityProject(providerId) {
   const fromConfig = getAntigravityProjectId();
@@ -27,17 +29,17 @@ async function convertAntigravityRequest(ctx) {
   if (!ctx.body || !isOpenAiChatBody(ctx.body)) return ctx;
 
   const stream = ctx.body.stream === true;
-  const project = resolveAntigravityProject(ctx.providerId);
-  if (!project) {
-    throw new Error(
-      "Thiếu Antigravity project ID — thêm system.antigravityProjectId trong config.json hoặc providers.*.projectId"
-    );
-  }
+  const accessToken = ctx.active?.authType === "oauth" ? ctx.active?.key : null;
+  const project = await ensureGeminiProjectId({
+    accessToken,
+    providerId: ctx.providerId,
+  });
 
   ctx._openAiModel = ctx.body.model;
+  const resolvedModel = resolveGeminiCliModel(ctx.body.model);
   ctx.body = openAiBodyToAntigravity(ctx.body, {
     project,
-    model: ctx.body.model,
+    model: resolvedModel,
     stream,
   });
   ctx.reqPath = stream

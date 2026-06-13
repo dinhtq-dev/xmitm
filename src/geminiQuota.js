@@ -12,6 +12,8 @@ const TIMEOUT_MS = 15000;
 
 const cache = new Map();
 const CACHE_MS = 60000;
+const projectCache = new Map();
+const PROJECT_CACHE_MS = 3600000;
 
 function parseJsonSafe(text) {
   try { return JSON.parse(text); } catch { return null; }
@@ -46,6 +48,50 @@ function resolveProjectId(providerId) {
   } catch {
     return "";
   }
+}
+
+function clearAntigravityProjectId() {
+  const cfg = loadConfig();
+  if (cfg.system.antigravityProjectId) {
+    cfg.system.antigravityProjectId = "";
+    saveConfig(cfg);
+  }
+  projectCache.clear();
+}
+
+function isIamPermissionError(body) {
+  const text = Buffer.isBuffer(body) ? body.toString("utf8") : String(body || "");
+  return /cloudaicompanion\.instances\.completeTask|lacks the required IAM permission/i.test(text);
+}
+
+/**
+ * Lay project ID cho Code Assist — uu tien discover tu OAuth token, khong luu project sai vao config.
+ */
+async function ensureGeminiProjectId({
+  accessToken,
+  providerId = "gemini-cli",
+  forceDiscover = false,
+} = {}) {
+  if (!accessToken) {
+    const configured = resolveProjectId(providerId);
+    if (configured) return configured;
+    throw new Error("Can OAuth token de discover project ID");
+  }
+
+  const cacheKey = `${providerId}:${accessToken.slice(-12)}`;
+  if (!forceDiscover) {
+    const configured = resolveProjectId(providerId);
+    if (configured) return configured;
+    const hit = projectCache.get(cacheKey);
+    if (hit && Date.now() - hit.at < PROJECT_CACHE_MS) return hit.project;
+  } else {
+    clearAntigravityProjectId();
+    projectCache.delete(cacheKey);
+  }
+
+  const project = await discoverProjectId(accessToken);
+  projectCache.set(cacheKey, { project, at: Date.now() });
+  return project;
 }
 
 function parseResetTimeMs(resetTime) {
@@ -215,15 +261,10 @@ async function probeGeminiCliOAuthQuota({ connectionId, providerId = "gemini-cli
 
   try {
     const conn = await ensureFreshConnection(connectionId);
-    let projectId = resolveProjectId(providerId);
-    if (!projectId) {
-      projectId = await discoverProjectId(conn.accessToken);
-      const cfg = loadConfig();
-      if (!cfg.system.antigravityProjectId) {
-        cfg.system.antigravityProjectId = projectId;
-        saveConfig(cfg);
-      }
-    }
+    const projectId = await ensureGeminiProjectId({
+      accessToken: conn.accessToken,
+      providerId,
+    });
     const result = await retrieveUserQuota(conn.accessToken, projectId);
     result.connectionId = connectionId;
     result.projectId = projectId;
@@ -243,4 +284,7 @@ module.exports = {
   clearGeminiQuotaCache,
   retrieveUserQuota,
   discoverProjectId,
+  ensureGeminiProjectId,
+  clearAntigravityProjectId,
+  isIamPermissionError,
 };

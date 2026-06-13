@@ -3,17 +3,17 @@
     "gpt-import-test": "claude-3-5-sonnet"
   },
   "antigravity": {
-    "gemini-default": "antigravity",
-    "gemini-pro-agent": "antigravity",
-    "gemini-3.5-flash": "antigravity",
-    "gemini-3.5-flash-high": "antigravity",
-    "gemini-3.5-flash-low": "antigravity",
-    "gemini-3.1-pro-low": "antigravity",
-    "gemini-3.1-pro-high": "antigravity",
-    "claude-sonnet-4-6": "antigravity",
-    "claude-opus-4-6-thinking": "antigravity",
-    "gpt-oss-120b-medium": "antigravity",
-    "gemini-3-flash": "antigravity"
+    "gemini-default": "gemini-3-flash-preview",
+    "gemini-pro-agent": "gemini-3.1-pro-preview",
+    "gemini-3.5-flash": "gemini-2.5-flash",
+    "gemini-3.5-flash-high": "gemini-2.5-flash",
+    "gemini-3.5-flash-low": "gemini-2.5-flash-lite",
+    "gemini-3.1-pro-low": "gemini-3.1-pro-preview",
+    "gemini-3.1-pro-high": "gemini-3.1-pro-preview",
+    "claude-sonnet-4-6": "gemini-2.5-flash",
+    "claude-opus-4-6-thinking": "gemini-2.5-pro",
+    "gpt-oss-120b-medium": "gemini-2.5-flash",
+    "gemini-3-flash": "gemini-3-flash-preview"
   },
   "copilot": {
     "gpt-4o": "antigravity",

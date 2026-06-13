@@ -1,4 +1,5 @@
 const { registerClientConverter } = require("../registry");
+const { resolveGeminiCliModel, resolveAntigravityBackendModel, shouldPreserveThinking } = require("../../geminiModels");
 
 const TYPE_MAP = {
   INTEGER: "integer",
@@ -70,8 +71,17 @@ registerClientConverter("antigravity", {
     if (!ctx.body) return ctx;
 
     sanitizeGeminiTools(ctx.body);
-    if (ctx.mappedModel && ctx.body.model !== undefined) {
-      ctx.body.model = ctx.mappedModel;
+    const isNative = !!(ctx.body.request?.contents || ctx.body.contents);
+    if (isNative) {
+      ctx.body.model = resolveAntigravityBackendModel(ctx.body);
+    } else {
+      const preserveThinking = shouldPreserveThinking(ctx.body, ctx.body.model || ctx.mappedModel);
+      const modelOpts = preserveThinking ? { preserveThinking: true } : {};
+      if (ctx.mappedModel && ctx.body.model !== undefined) {
+        ctx.body.model = resolveGeminiCliModel(ctx.mappedModel, modelOpts);
+      } else if (ctx.body.model) {
+        ctx.body.model = resolveGeminiCliModel(ctx.body.model, modelOpts);
+      }
     }
 
     ctx.routerPath = "/v1/chat/completions";
